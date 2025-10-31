@@ -1,0 +1,6 @@
+# Supabase Edge Functions Configuration
+# This file disables authentication for the stripe-webhook function
+
+[functions.stripe-webhook]
+verify_jwt = false
+
