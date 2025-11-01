@@ -163,24 +163,9 @@ Deno.serve(async (req) => {
         
         console.log('Redirect URL:', redirectUrl);
 
-        // Return HTML redirect for GET requests (QR code scans)
+        // Return HTTP redirect for GET requests (QR code scans)
         if (req.method === 'GET') {
-            return new Response(
-                `<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="utf-8">
-    <title>Redirecting...</title>
-    <meta http-equiv="refresh" content="0;url=${redirectUrl}">
-</head>
-<body>
-    <script>window.location.href="${redirectUrl}";</script>
-</body>
-</html>`,
-                {
-                    headers: { ...corsHeaders, 'Content-Type': 'text/html' }
-                }
-            );
+            return Response.redirect(redirectUrl, 302);
         }
 
         // Return JSON for POST requests (API calls)
