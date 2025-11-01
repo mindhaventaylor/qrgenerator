@@ -12,7 +12,19 @@ Deno.serve(async (req) => {
     }
 
     try {
-        const { qrCodeId, scanData } = await req.json();
+        // Get QR code ID from query parameter or JSON body
+        const url = new URL(req.url);
+        const qrCodeIdParam = url.searchParams.get('id');
+        
+        let qrCodeId, scanData;
+        if (req.method === 'POST') {
+            const body = await req.json();
+            qrCodeId = body.qrCodeId;
+            scanData = body.scanData;
+        } else {
+            qrCodeId = qrCodeIdParam;
+            scanData = {};
+        }
 
         if (!qrCodeId) {
             throw new Error('QR code ID is required');
@@ -73,6 +85,24 @@ Deno.serve(async (req) => {
         }
 
         // Update scan counts on qr_codes table
+        // First, get the current scan count
+        const getCountResponse = await fetch(`${supabaseUrl}/rest/v1/qr_codes?id=eq.${qrCodeId}&select=scan_count`, {
+            headers: {
+                'Authorization': `Bearer ${serviceRoleKey}`,
+                'apikey': serviceRoleKey
+            }
+        });
+
+        let newScanCount = 1;
+        if (getCountResponse.ok) {
+            const countData = await getCountResponse.json();
+            if (countData && countData.length > 0) {
+                const currentCount = countData[0].scan_count || 0;
+                newScanCount = currentCount + 1;
+            }
+        }
+
+        // Now update with the incremented count
         const updateResponse = await fetch(`${supabaseUrl}/rest/v1/qr_codes?id=eq.${qrCodeId}`, {
             method: 'PATCH',
             headers: {
@@ -81,7 +111,7 @@ Deno.serve(async (req) => {
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({
-                scan_count: scanData?.incrementCount || 1
+                scan_count: newScanCount
             })
         });
 
@@ -113,6 +143,27 @@ Deno.serve(async (req) => {
             }
         }
 
+        // Return HTML redirect for GET requests (QR code scans)
+        if (req.method === 'GET') {
+            return new Response(
+                `<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Redirecting...</title>
+    <meta http-equiv="refresh" content="0;url=${redirectUrl}">
+</head>
+<body>
+    <script>window.location.href="${redirectUrl}";</script>
+</body>
+</html>`,
+                {
+                    headers: { ...corsHeaders, 'Content-Type': 'text/html' }
+                }
+            );
+        }
+
+        // Return JSON for POST requests (API calls)
         return new Response(JSON.stringify({
             data: {
                 success: true,

@@ -54,6 +54,7 @@ export function CreateQRPage() {
   const [subscriptionChecked, setSubscriptionChecked] = useState(false);
   const [canCreateQR, setCanCreateQR] = useState(false);
   const [subscriptionMessage, setSubscriptionMessage] = useState('');
+  const [enableTracking, setEnableTracking] = useState(true);
   const { user } = useAuth();
   const navigate = useNavigate();
 
@@ -139,7 +140,10 @@ export function CreateQRPage() {
         user.id,
         qrName || `${selectedType} QR Code`,
         selectedType,
-        content
+        content,
+        undefined,
+        undefined,
+        enableTracking
       );
 
       // Success - navigate to dashboard
@@ -363,6 +367,28 @@ export function CreateQRPage() {
                 {error}
               </div>
             )}
+
+            {/* Tracking Toggle */}
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <label className="flex items-center justify-between cursor-pointer">
+                <div>
+                  <span className="font-medium text-gray-800">Enable Analytics Tracking</span>
+                  <p className="text-sm text-gray-600 mt-1">
+                    Track scans, views, and user analytics for this QR code
+                  </p>
+                </div>
+                <div className="ml-4">
+                  <input
+                    type="checkbox"
+                    checked={enableTracking}
+                    onChange={(e) => setEnableTracking(e.target.checked)}
+                    className="w-12 h-6 rounded-full bg-gray-300 checked:bg-purple-600 transition relative appearance-none cursor-pointer
+                    before:absolute before:left-1 before:top-1 before:w-4 before:h-4 before:bg-white before:rounded-full before:transition-all
+                    checked:before:left-7"
+                  />
+                </div>
+              </label>
+            </div>
 
             <div className="flex items-center justify-between pt-6">
               <button

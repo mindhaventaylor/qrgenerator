@@ -24,7 +24,14 @@ export interface QRContent {
 /**
  * Builds QR code data string based on type and content
  */
-export function buildQRData(type: string, content: QRContent): string {
+export function buildQRData(type: string, content: QRContent, qrCodeId?: string): string {
+  // If QR code ID is provided, use tracking URL
+  if (qrCodeId) {
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || "https://pstoxizwwgbpwrcdknto.supabase.co";
+    return `${supabaseUrl}/functions/v1/track-scan?id=${qrCodeId}`;
+  }
+
+  // Otherwise, return direct URL (for backward compatibility or non-tracked codes)
   switch (type) {
     case 'website':
       return content.url || '';
@@ -161,24 +168,39 @@ export async function createQRCode(
   type: string,
   content: QRContent,
   folderId?: string,
-  customization?: any
+  customization?: any,
+  enableTracking: boolean = true
 ): Promise<{ qrCode: any; imageUrl: string }> {
   try {
-    // 1. Build QR data string
-    const qrData = buildQRData(type, content);
+    // 1. First, create a placeholder image URL (we'll regenerate QR after getting ID)
+    const placeholderImageUrl = 'placeholder';
+
+    // 2. Save to database first to get the QR code ID
+    const qrCode = await saveQRCodeToDatabase(userId, name, type, content, placeholderImageUrl, folderId, customization);
+
+    // 3. Build QR data string with or without tracking URL
+    const qrData = enableTracking ? buildQRData(type, content, qrCode.id) : buildQRData(type, content);
     
     if (!qrData) {
       throw new Error('QR code content is empty. Please fill in all required fields.');
     }
 
-    // 2. Generate QR code image
+    // 4. Generate QR code image with tracking URL
     const imageBlob = await generateQRImage(qrData);
 
-    // 3. Upload to Supabase Storage
+    // 5. Upload to Supabase Storage
     const imageUrl = await uploadQRImage(imageBlob, userId);
 
-    // 4. Save to database
-    const qrCode = await saveQRCodeToDatabase(userId, name, type, content, imageUrl, folderId, customization);
+    // 6. Update the database with the actual image URL
+    const { error: updateError } = await supabase
+      .from('qr_codes')
+      .update({ qr_image_url: imageUrl })
+      .eq('id', qrCode.id);
+
+    if (updateError) {
+      console.error('Error updating QR code image:', updateError);
+      throw updateError;
+    }
 
     return { qrCode, imageUrl };
   } catch (error: any) {
