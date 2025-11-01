@@ -3,6 +3,7 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
 import { createCheckoutSession, createPortalSession } from '../lib/stripe';
+import { useSEO } from '../hooks/useSEO';
 import { Check, Loader2, Calendar, Settings } from 'lucide-react';
 
 const PLANS = [
@@ -29,6 +30,12 @@ const FEATURES = [
 ];
 
 export function BillingPage() {
+  useSEO({
+    title: 'Billing & Subscription - QR Generator AI',
+    description: 'Manage your subscription and billing. Simple $5/month pricing with no hidden fees. Cancel anytime.',
+    url: 'https://qrgenerator-liart.vercel.app/billing'
+  });
+  
   const { user } = useAuth();
   const [subscription, setSubscription] = useState<any>(null);
   const [loading, setLoading] = useState(true);

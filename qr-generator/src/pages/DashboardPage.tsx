@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
+import { useSEO } from '../hooks/useSEO';
 import {
   QrCode,
   Plus,
@@ -38,6 +39,12 @@ interface Subscription {
 }
 
 export function DashboardPage() {
+  useSEO({
+    title: 'My QR Codes - Dashboard | QR Generator AI',
+    description: 'Manage your QR codes, view analytics, and track performance. Create unlimited dynamic QR codes with advanced tracking.',
+    url: 'https://qrgenerator-liart.vercel.app/dashboard'
+  });
+  
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
   const [qrCodes, setQrCodes] = useState<QRCodeItem[]>([]);

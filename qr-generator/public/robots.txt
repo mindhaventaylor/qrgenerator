@@ -1,0 +1,21 @@
+# robots.txt for QR Generator AI
+User-agent: *
+Allow: /
+
+# Sitemap
+Sitemap: https://qrgenerator-liart.vercel.app/sitemap.xml
+
+# Disallow admin/private pages
+Disallow: /dashboard
+Disallow: /create-qr
+Disallow: /analytics
+Disallow: /account
+Disallow: /billing
+
+# Allow public pages
+Allow: /
+Allow: /faq
+Allow: /contact
+Allow: /privacy
+Allow: /terms
+

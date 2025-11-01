@@ -2,9 +2,15 @@ import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
+import { useSEO } from '../hooks/useSEO';
 import { BarChart3, TrendingUp, Users, Globe, Calendar } from 'lucide-react';
 
 export function AnalyticsPage() {
+  useSEO({
+    title: 'QR Code Analytics - Track Your QR Code Performance',
+    description: 'View detailed analytics for your QR codes. Track scans, locations, devices, and more with real-time data.',
+    url: 'https://qrgenerator-liart.vercel.app/analytics'
+  });
   const { qrId } = useParams();
   const { user } = useAuth();
   const [analytics, setAnalytics] = useState<any>(null);

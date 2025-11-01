@@ -1,9 +1,15 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { useSEO } from '../hooks/useSEO';
 import { QrCode, Mail, Lock, User, Chrome } from 'lucide-react';
 
 export function SignupPage() {
+  useSEO({
+    title: 'Sign Up - QR Generator AI | Start Creating QR Codes Today',
+    description: 'Sign up for QR Generator AI and start creating dynamic QR codes with advanced analytics. Simple $5/month pricing with a 14-day free trial.',
+    url: 'https://qrgenerator-liart.vercel.app/signup'
+  });
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');

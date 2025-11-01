@@ -1,9 +1,15 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { useSEO } from '../hooks/useSEO';
 import { QrCode, Mail, Lock, Chrome } from 'lucide-react';
 
 export function LoginPage() {
+  useSEO({
+    title: 'Login - QR Generator AI',
+    description: 'Login to your QR Generator AI account to create and manage dynamic QR codes with advanced analytics.',
+    url: 'https://qrgenerator-liart.vercel.app/login'
+  });
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');

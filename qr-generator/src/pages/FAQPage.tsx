@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { QrCode, ChevronDown } from 'lucide-react';
 import { useState } from 'react';
+import { useSEO } from '../hooks/useSEO';
 
 const FAQS = [
   {
@@ -46,6 +47,12 @@ const FAQS = [
 ];
 
 export function FAQPage() {
+  useSEO({
+    title: 'FAQ - Frequently Asked Questions | QR Generator AI',
+    description: 'Get answers to common questions about QR Generator AI. Learn about pricing, features, dynamic QR codes, and more.',
+    url: 'https://qrgenerator-liart.vercel.app/faq'
+  });
+  
   const [openIndex, setOpenIndex] = useState<number | null>(0);
 
   return (

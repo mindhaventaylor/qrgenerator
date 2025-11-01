@@ -3,6 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { createQRCode } from '../lib/qrGenerator';
 import { checkSubscriptionStatus } from '../lib/subscriptionCheck';
+import { useSEO } from '../hooks/useSEO';
 import {
   Globe,
   FileText,
@@ -45,6 +46,12 @@ const QR_TYPES = [
 ];
 
 export function CreateQRPage() {
+  useSEO({
+    title: 'Create QR Code - QR Generator AI',
+    description: 'Create custom QR codes for websites, vCard, WiFi, social media, and more. Dynamic QR codes with analytics tracking.',
+    url: 'https://qrgenerator-liart.vercel.app/create-qr'
+  });
+  
   const [step, setStep] = useState(1);
   const [selectedType, setSelectedType] = useState('');
   const [qrName, setQrName] = useState('');

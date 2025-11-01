@@ -1,8 +1,16 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { QrCode, Palette, BarChart3, Settings, Shield, Zap, Menu, X } from 'lucide-react';
+import { useSEO } from '../hooks/useSEO';
 
 export function HomePage() {
+  useSEO({
+    title: 'QR Generator AI - Create Dynamic QR Codes with Advanced Analytics | $5/Month',
+    description: 'Generate dynamic QR codes with real-time analytics, advanced customization, and tracking. Simple $5/month pricing with no hidden fees or scams. Create QR codes for websites, vCard, WiFi, social media, and more.',
+    keywords: 'qr code generator, dynamic qr codes, qr code analytics, qr code creator, business qr codes, qr code tracking, qr code maker, free qr code, honest pricing',
+    url: 'https://qrgenerator-liart.vercel.app/'
+  });
+  
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const qrTypes = [
     { name: 'Website', icon: '🌐', description: 'Link to any website URL' },
