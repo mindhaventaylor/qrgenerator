@@ -27,6 +27,7 @@ interface QRCodeItem {
   scan_count: number;
   created_at: string;
   is_active: boolean;
+  is_tracked?: boolean;
   content: any;
 }
 
@@ -328,12 +329,14 @@ export function DashboardPage() {
                         </button>
                       </div>
 
-                      <div className="mt-4 flex items-center space-x-4">
-                        <div className="flex items-center text-sm text-gray-600">
-                          <BarChart3 className="w-4 h-4 mr-1" />
-                          <span>{qr.scan_count || 0} scans</span>
+                      {qr.is_tracked !== false && (
+                        <div className="mt-4 flex items-center space-x-4">
+                          <div className="flex items-center text-sm text-gray-600">
+                            <BarChart3 className="w-4 h-4 mr-1" />
+                            <span>{qr.scan_count || 0} scans</span>
+                          </div>
                         </div>
-                      </div>
+                      )}
 
                       <div className="mt-4 flex items-center space-x-2 flex-wrap gap-2">
                         {qr.qr_image_url && (
@@ -356,13 +359,15 @@ export function DashboardPage() {
                           <Power className={`w-4 h-4 ${qr.is_active !== false ? '' : 'text-orange-600'}`} />
                           <span>{qr.is_active !== false ? 'Active' : 'Inactive'}</span>
                         </button>
-                        <Link
-                          to={`/analytics/${qr.id}`}
-                          className="flex items-center space-x-1 px-3 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition text-sm"
-                        >
-                          <Eye className="w-4 h-4" />
-                          <span>View Details</span>
-                        </Link>
+                        {qr.is_tracked !== false && (
+                          <Link
+                            to={`/analytics/${qr.id}`}
+                            className="flex items-center space-x-1 px-3 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition text-sm"
+                          >
+                            <Eye className="w-4 h-4" />
+                            <span>View Details</span>
+                          </Link>
+                        )}
                       </div>
                     </div>
                   </div>

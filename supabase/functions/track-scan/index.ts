@@ -127,8 +127,11 @@ Deno.serve(async (req) => {
         
         if (qrCodeResponse.ok) {
             const qrData = await qrCodeResponse.json();
+            console.log('QR code data retrieved:', JSON.stringify(qrData));
+            
             if (qrData && qrData.length > 0) {
                 const qrCode = qrData[0];
+                console.log('QR code type:', qrCode.type, 'Content:', JSON.stringify(qrCode.content));
                 
                 // Extract redirect URL based on type
                 if (qrCode.type === 'website' && qrCode.content?.url) {
@@ -141,7 +144,11 @@ Deno.serve(async (req) => {
                     redirectUrl = `https://instagram.com/${qrCode.content.username}`;
                 }
             }
+        } else {
+            console.log('Failed to get QR code data, status:', qrCodeResponse.status);
         }
+        
+        console.log('Redirect URL:', redirectUrl);
 
         // Return HTML redirect for GET requests (QR code scans)
         if (req.method === 'GET') {

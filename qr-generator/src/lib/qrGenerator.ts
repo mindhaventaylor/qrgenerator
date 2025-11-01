@@ -131,7 +131,8 @@ export async function saveQRCodeToDatabase(
   content: QRContent,
   qrImageUrl: string,
   folderId?: string,
-  customization?: any
+  customization?: any,
+  isTracked: boolean = true
 ): Promise<any> {
   const { data, error } = await supabase
     .from('qr_codes')
@@ -145,6 +146,7 @@ export async function saveQRCodeToDatabase(
       folder_id: folderId || null,
       is_dynamic: true,
       is_active: true,
+      is_tracked: isTracked,
       scan_count: 0,
       unique_scan_count: 0
     })
@@ -176,7 +178,7 @@ export async function createQRCode(
     const placeholderImageUrl = 'placeholder';
 
     // 2. Save to database first to get the QR code ID
-    const qrCode = await saveQRCodeToDatabase(userId, name, type, content, placeholderImageUrl, folderId, customization);
+    const qrCode = await saveQRCodeToDatabase(userId, name, type, content, placeholderImageUrl, folderId, customization, enableTracking);
 
     // 3. Build QR data string with or without tracking URL
     const qrData = enableTracking ? buildQRData(type, content, qrCode.id) : buildQRData(type, content);
