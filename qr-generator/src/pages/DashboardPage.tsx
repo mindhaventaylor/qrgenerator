@@ -329,11 +329,11 @@ export function DashboardPage() {
                         </button>
                       </div>
 
-                      {qr.is_tracked !== false && (
+                      {qr.is_tracked !== false && qr.scan_count > 0 && (
                         <div className="mt-4 flex items-center space-x-4">
                           <div className="flex items-center text-sm text-gray-600">
                             <BarChart3 className="w-4 h-4 mr-1" />
-                            <span>{qr.scan_count || 0} scans</span>
+                            <span>{qr.scan_count} scans</span>
                           </div>
                         </div>
                       )}
