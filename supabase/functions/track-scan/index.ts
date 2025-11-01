@@ -12,6 +12,8 @@ Deno.serve(async (req) => {
     }
 
     try {
+        console.log('Track-scan function called:', req.method, req.url);
+        
         // Get QR code ID from query parameter or JSON body
         const url = new URL(req.url);
         const qrCodeIdParam = url.searchParams.get('id');
@@ -26,6 +28,8 @@ Deno.serve(async (req) => {
             scanData = {};
         }
 
+        console.log('QR Code ID:', qrCodeId);
+
         if (!qrCodeId) {
             throw new Error('QR code ID is required');
         }
@@ -36,6 +40,11 @@ Deno.serve(async (req) => {
         if (!serviceRoleKey || !supabaseUrl) {
             throw new Error('Supabase configuration missing');
         }
+        
+        console.log('Environment variables check:', {
+            hasServiceKey: !!serviceRoleKey,
+            supabaseUrl: supabaseUrl
+        });
 
         // Extract scan information
         const userAgent = scanData?.userAgent || req.headers.get('user-agent') || '';
@@ -59,6 +68,7 @@ Deno.serve(async (req) => {
         else if (userAgent.includes('iOS') || userAgent.includes('iPhone')) os = 'iOS';
 
         // Insert scan record
+        console.log('Attempting to insert scan record for QR code:', qrCodeId);
         const scanResponse = await fetch(`${supabaseUrl}/rest/v1/qr_scans`, {
             method: 'POST',
             headers: {
@@ -79,10 +89,13 @@ Deno.serve(async (req) => {
             })
         });
 
+        console.log('Scan insert response status:', scanResponse.status);
         if (!scanResponse.ok) {
             const errorText = await scanResponse.text();
+            console.error('Failed to insert scan:', errorText);
             throw new Error(`Failed to record scan: ${errorText}`);
         }
+        console.log('Scan record inserted successfully');
 
         // Update scan counts on qr_codes table
         // First, get the current scan count
