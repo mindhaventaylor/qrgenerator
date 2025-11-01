@@ -9,29 +9,23 @@ export function AuthCallbackPage() {
   useEffect(() => {
     async function handleCallback() {
       try {
-        // Get the full URL with hash fragment
-        const hashParams = new URLSearchParams(window.location.hash.substring(1));
-        const error = hashParams.get('error');
-        const errorDescription = hashParams.get('error_description');
-
+        // Handle OAuth callback from Supabase
+        const { data, error } = await supabase.auth.getSession();
+        
         if (error) {
-          console.error('Auth error:', error, errorDescription);
+          console.error('Auth error:', error);
           navigate('/login?error=auth_failed');
           return;
         }
 
-        // Supabase will handle the session automatically
-        // Just wait a moment for the session to be set
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        
         // Check if user is authenticated
-        const { data: { user } } = await supabase.auth.getUser();
-        
-        if (user) {
+        if (data?.session?.user) {
           // Success! Redirect to dashboard
+          console.log('OAuth login successful');
           navigate('/dashboard');
         } else {
-          // No user, redirect to login
+          // No session, redirect to login
+          console.log('No session found');
           navigate('/login?error=no_session');
         }
       } catch (error) {
