@@ -12,10 +12,19 @@ CREATE TABLE IF NOT EXISTS qr_scans (
     user_agent TEXT
 );
 
--- Add foreign key constraint
-ALTER TABLE qr_scans
-ADD CONSTRAINT fk_qr_scans_qr_code_id
-FOREIGN KEY (qr_code_id) REFERENCES qr_codes(id) ON DELETE CASCADE;
+-- Add foreign key constraint (if not exists)
+DO $$ 
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.table_constraints 
+        WHERE constraint_name = 'fk_qr_scans_qr_code_id' 
+        AND table_name = 'qr_scans'
+    ) THEN
+        ALTER TABLE qr_scans
+        ADD CONSTRAINT fk_qr_scans_qr_code_id
+        FOREIGN KEY (qr_code_id) REFERENCES qr_codes(id) ON DELETE CASCADE;
+    END IF;
+END $$;
 
 -- Create indexes for better query performance
 CREATE INDEX IF NOT EXISTS idx_qr_scans_qr_code_id ON qr_scans(qr_code_id);
@@ -25,6 +34,7 @@ CREATE INDEX IF NOT EXISTS idx_qr_scans_scanned_at ON qr_scans(scanned_at);
 ALTER TABLE qr_scans ENABLE ROW LEVEL SECURITY;
 
 -- Create RLS policies
+DROP POLICY IF EXISTS "Users can view their own QR scan data" ON qr_scans;
 CREATE POLICY "Users can view their own QR scan data" ON qr_scans
   FOR SELECT USING (
     EXISTS (
@@ -35,11 +45,13 @@ CREATE POLICY "Users can view their own QR scan data" ON qr_scans
   );
 
 -- Allow anyone to insert scans (track-scan function needs this)
+DROP POLICY IF EXISTS "Anyone can insert scans" ON qr_scans;
 CREATE POLICY "Anyone can insert scans" ON qr_scans
   FOR INSERT TO anon
   WITH CHECK (true);
 
 -- Allow authenticated users to insert scans  
+DROP POLICY IF EXISTS "Authenticated users can insert scans" ON qr_scans;
 CREATE POLICY "Authenticated users can insert scans" ON qr_scans
   FOR INSERT TO authenticated
   WITH CHECK (true);
