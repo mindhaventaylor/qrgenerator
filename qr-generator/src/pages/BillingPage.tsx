@@ -114,7 +114,7 @@ export function BillingPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="container mx-auto px-6 py-12">
+      <div className="container mx-auto px-4 md:px-6 py-8 md:py-12">
         <div className="max-w-6xl mx-auto">
           <Link to="/dashboard" className="text-purple-600 hover:text-purple-700 mb-4 inline-block">
             ← Back to Dashboard
