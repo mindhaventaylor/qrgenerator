@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
@@ -41,6 +41,7 @@ export function BillingPage() {
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState(false);
   const [searchParams] = useSearchParams();
+  const conversionTrackedRef = useRef<string | null>(null);
 
   useEffect(() => {
     loadSubscription();
@@ -60,6 +61,34 @@ export function BillingPage() {
       });
     }
   }, [user, searchParams]);
+
+  // Track Google Ads conversion when subscription becomes active after payment
+  useEffect(() => {
+    const success = searchParams.get('success');
+    const sessionId = searchParams.get('session_id');
+    
+    // Only track conversion if payment was successful and subscription is now active
+    // Prevent duplicate tracking for the same session
+    if (success && sessionId && subscription?.status === 'active' && window.gtag && conversionTrackedRef.current !== sessionId) {
+      // Fire Google Ads conversion event for Purchase
+      window.gtag('event', 'conversion', {
+        'send_to': 'AW-17694438085/TJjKCIaoj7gbEMXlrvVB',
+        'value': 5.00,
+        'currency': 'USD',
+        'transaction_id': sessionId
+      });
+      
+      // Mark this session as tracked to prevent duplicates
+      conversionTrackedRef.current = sessionId;
+      
+      console.log('Google Ads conversion tracked:', {
+        send_to: 'AW-17694438085/TJjKCIaoj7gbEMXlrvVB',
+        value: 5.00,
+        currency: 'USD',
+        transaction_id: sessionId
+      });
+    }
+  }, [subscription, searchParams]);
 
   async function loadSubscription() {
     if (!user) return;
