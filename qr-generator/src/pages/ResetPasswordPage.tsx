@@ -25,33 +25,50 @@ export function ResetPasswordPage() {
   useEffect(() => {
     // Check if there's a valid session (user clicked the reset link)
     async function checkSession() {
+      // First check for errors in URL hash
+      const hashParams = new URLSearchParams(window.location.hash.substring(1));
+      const urlError = hashParams.get('error');
+      
+      if (urlError) {
+        // Redirect to error page with error details
+        const errorCode = hashParams.get('error_code');
+        const errorDesc = hashParams.get('error_description');
+        const errorParams = new URLSearchParams();
+        errorParams.set('error', urlError);
+        if (errorCode) errorParams.set('error_code', errorCode);
+        if (errorDesc) errorParams.set('error_description', errorDesc);
+        navigate(`/auth/error?${errorParams.toString()}`);
+        return;
+      }
+
       const { data: { session } } = await supabase.auth.getSession();
       if (session) {
         setValidToken(true);
       } else {
         // Check URL hash for access token (Supabase puts it there)
-        const hashParams = new URLSearchParams(window.location.hash.substring(1));
         const accessToken = hashParams.get('access_token');
         const type = hashParams.get('type');
         
         if (accessToken && type === 'recovery') {
           // Set the session from the token
-          const { error: setError } = await supabase.auth.setSession({
+          const { error: setSessionError } = await supabase.auth.setSession({
             access_token: accessToken,
             refresh_token: hashParams.get('refresh_token') || ''
           });
-          if (!setError) {
+          if (!setSessionError) {
             setValidToken(true);
           } else {
-            setError('Invalid or expired reset link. Please request a new one.');
+            // Redirect to error page
+            navigate('/auth/error?error=access_denied&error_description=Invalid or expired reset link');
           }
         } else {
-          setError('Invalid or expired reset link. Please request a new one.');
+          // No token found, redirect to error page
+          navigate('/auth/error?error=access_denied&error_description=Invalid or expired reset link');
         }
       }
     }
     checkSession();
-  }, []);
+  }, [navigate]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
