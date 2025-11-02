@@ -47,7 +47,7 @@ const QR_TYPES = [
 
 export function CreateQRPage() {
   useSEO({
-    title: 'Create QR Code - QR Generator AI',
+    title: 'Create QR Code - generatecodeqr',
     description: 'Create custom QR codes for websites, vCard, WiFi, social media, and more. Dynamic QR codes with analytics tracking.',
     url: 'https://qrgenerator-liart.vercel.app/create-qr'
   });

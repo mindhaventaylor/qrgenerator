@@ -48,8 +48,8 @@ const FAQS = [
 
 export function FAQPage() {
   useSEO({
-    title: 'FAQ - Frequently Asked Questions | QR Generator AI',
-    description: 'Get answers to common questions about QR Generator AI. Learn about pricing, features, dynamic QR codes, and more.',
+    title: 'FAQ - Frequently Asked Questions | generatecodeqr',
+    description: 'Get answers to common questions about generatecodeqr. Learn about pricing, features, dynamic QR codes, and more.',
     url: 'https://qrgenerator-liart.vercel.app/faq'
   });
   
@@ -60,7 +60,7 @@ export function FAQPage() {
       <nav className="container mx-auto px-6 py-6 flex justify-between items-center">
         <Link to="/" className="flex items-center space-x-2">
           <QrCode className="w-8 h-8 text-purple-400" />
-          <span className="text-2xl font-bold">QR generator.ai</span>
+          <span className="text-2xl font-bold">generatecodeqr</span>
         </Link>
         <div className="flex items-center space-x-4">
           <Link to="/login" className="hover:text-purple-300 transition">Log In</Link>

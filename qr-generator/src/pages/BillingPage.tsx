@@ -31,7 +31,7 @@ const FEATURES = [
 
 export function BillingPage() {
   useSEO({
-    title: 'Billing & Subscription - QR Generator AI',
+    title: 'Billing & Subscription - generatecodeqr',
     description: 'Manage your subscription and billing. Simple $5/month pricing with no hidden fees. Cancel anytime.',
     url: 'https://qrgenerator-liart.vercel.app/billing'
   });
@@ -62,33 +62,84 @@ export function BillingPage() {
     }
   }, [user, searchParams]);
 
-  // Track Google Ads conversion when subscription becomes active after payment
+  // Track Google Ads conversion immediately when payment success page loads
   useEffect(() => {
     const success = searchParams.get('success');
     const sessionId = searchParams.get('session_id');
     
-    // Only track conversion if payment was successful and subscription is now active
-    // Prevent duplicate tracking for the same session
-    if (success && sessionId && subscription?.status === 'active' && window.gtag && conversionTrackedRef.current !== sessionId) {
-      // Fire Google Ads conversion event for Purchase
-      window.gtag('event', 'conversion', {
-        'send_to': 'AW-17694438085/TJjKCIaoj7gbEMXlrvVB',
-        'value': 5.00,
-        'currency': 'USD',
-        'transaction_id': sessionId
-      });
+    // Fire conversion immediately on success page load (Google Ads requirement)
+    // Don't wait for subscription status - conversion should fire on thank you page
+    if (success && sessionId && conversionTrackedRef.current !== sessionId) {
+      // Check if we've already tracked this session (prevent duplicates)
+      const previouslyTracked = localStorage.getItem('google_ads_conversion_tracked');
+      if (previouslyTracked === sessionId) {
+        return; // Already tracked
+      }
       
-      // Mark this session as tracked to prevent duplicates
-      conversionTrackedRef.current = sessionId;
+      // Method 1: Try to fire conversion via gtag function
+      const fireConversion = () => {
+        if (window.gtag) {
+          // Fire Google Ads conversion event for Purchase
+          window.gtag('event', 'conversion', {
+            'send_to': 'AW-17694438085/TJjKCIaoj7gbEMXlrvVB',
+            'value': 5.00,
+            'currency': 'USD',
+            'transaction_id': sessionId
+          });
+          
+          // Mark this session as tracked
+          conversionTrackedRef.current = sessionId;
+          localStorage.setItem('google_ads_conversion_tracked', sessionId);
+          
+          console.log('Google Ads conversion tracked:', {
+            send_to: 'AW-17694438085/TJjKCIaoj7gbEMXlrvVB',
+            value: 5.00,
+            currency: 'USD',
+            transaction_id: sessionId
+          });
+        } else {
+          // Retry after a short delay if gtag isn't loaded yet
+          setTimeout(fireConversion, 100);
+        }
+      };
       
-      console.log('Google Ads conversion tracked:', {
-        send_to: 'AW-17694438085/TJjKCIaoj7gbEMXlrvVB',
-        value: 5.00,
-        currency: 'USD',
-        transaction_id: sessionId
-      });
+      // Method 2: Also inject inline script as fallback (more reliable for Google Ads)
+      // This ensures the conversion fires even if React hasn't fully loaded
+      const script = document.createElement('script');
+      script.type = 'text/javascript';
+      script.innerHTML = `
+        (function() {
+          function fireConversion() {
+            if (typeof gtag !== 'undefined') {
+              gtag('event', 'conversion', {
+                'send_to': 'AW-17694438085/TJjKCIaoj7gbEMXlrvVB',
+                'value': 5.00,
+                'currency': 'USD',
+                'transaction_id': '${sessionId}'
+              });
+            } else if (window.dataLayer) {
+              // Fallback: push to dataLayer if gtag not available yet
+              window.dataLayer.push({
+                'event': 'conversion',
+                'send_to': 'AW-17694438085/TJjKCIaoj7gbEMXlrvVB',
+                'value': 5.00,
+                'currency': 'USD',
+                'transaction_id': '${sessionId}'
+              });
+            } else {
+              // Retry if neither is available
+              setTimeout(fireConversion, 50);
+            }
+          }
+          fireConversion();
+        })();
+      `;
+      document.head.appendChild(script);
+      
+      // Also try method 1
+      fireConversion();
     }
-  }, [subscription, searchParams]);
+  }, [searchParams]);
 
   async function loadSubscription() {
     if (!user) return;

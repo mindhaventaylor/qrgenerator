@@ -9,6 +9,8 @@ interface AuthContextType {
   signUp: (email: string, password: string, userData?: any) => Promise<any>;
   signOut: () => Promise<void>;
   signInWithGoogle: () => Promise<any>;
+  requestPasswordReset: (email: string) => Promise<any>;
+  resetPassword: (password: string) => Promise<any>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -69,8 +71,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     });
   }
 
+  async function requestPasswordReset(email: string) {
+    return await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/reset-password`
+    });
+  }
+
+  async function resetPassword(password: string) {
+    // Supabase handles the token via URL hash/session, so we use updateUser
+    const { data, error } = await supabase.auth.updateUser({
+      password: password
+    });
+    if (error) throw error;
+    return data;
+  }
+
   return (
-    <AuthContext.Provider value={{ user, loading, signIn, signUp, signOut, signInWithGoogle }}>
+    <AuthContext.Provider value={{ user, loading, signIn, signUp, signOut, signInWithGoogle, requestPasswordReset, resetPassword }}>
       {children}
     </AuthContext.Provider>
   );

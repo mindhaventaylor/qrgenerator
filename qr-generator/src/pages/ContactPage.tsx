@@ -16,7 +16,7 @@ export function ContactPage() {
       <nav className="container mx-auto px-6 py-6 flex justify-between items-center">
         <Link to="/" className="flex items-center space-x-2">
           <QrCode className="w-8 h-8 text-purple-400" />
-          <span className="text-2xl font-bold">QR generator.ai</span>
+          <span className="text-2xl font-bold">generatecodeqr</span>
         </Link>
         <div className="flex items-center space-x-4">
           <Link to="/login" className="hover:text-purple-300 transition">Log In</Link>

@@ -40,7 +40,7 @@ interface Subscription {
 
 export function DashboardPage() {
   useSEO({
-    title: 'My QR Codes - Dashboard | QR Generator AI',
+    title: 'My QR Codes - Dashboard | generatecodeqr',
     description: 'Manage your QR codes, view analytics, and track performance. Create unlimited dynamic QR codes with advanced tracking.',
     url: 'https://qrgenerator-liart.vercel.app/dashboard'
   });
@@ -172,7 +172,7 @@ export function DashboardPage() {
           <div className="p-6 border-b border-gray-200">
             <Link to="/dashboard" className="flex items-center space-x-2">
               <QrCode className="w-8 h-8 text-purple-600" />
-              <span className="text-xl font-bold text-gray-800">QR generator.ai</span>
+              <span className="text-xl font-bold text-gray-800">generatecodeqr</span>
             </Link>
           </div>
 

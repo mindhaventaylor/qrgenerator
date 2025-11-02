@@ -1,4 +1,4 @@
-# robots.txt for QR Generator AI
+# robots.txt for generatecodeqr
 User-agent: *
 Allow: /
 

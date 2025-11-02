@@ -7,7 +7,7 @@ export function TermsPage() {
       <nav className="container mx-auto px-6 py-6 flex justify-between items-center">
         <Link to="/" className="flex items-center space-x-2">
           <QrCode className="w-8 h-8 text-purple-400" />
-          <span className="text-2xl font-bold">QR generator.ai</span>
+          <span className="text-2xl font-bold">generatecodeqr</span>
         </Link>
         <Link to="/" className="hover:text-purple-300 transition">Back to Home</Link>
       </nav>
@@ -19,7 +19,7 @@ export function TermsPage() {
           <section>
             <h2 className="text-2xl font-bold mb-4">Acceptance of Terms</h2>
             <p className="text-gray-300">
-              By accessing and using QR Generator.ai, you accept and agree to be bound by the terms and provisions of this agreement.
+              By accessing and using generatecodeqr, you accept and agree to be bound by the terms and provisions of this agreement.
             </p>
           </section>
 
@@ -44,14 +44,14 @@ export function TermsPage() {
           <section>
             <h2 className="text-2xl font-bold mb-4">Intellectual Property</h2>
             <p className="text-gray-300">
-              The service and its original content, features, and functionality are owned by QR Generator.ai and are protected by international copyright, trademark, and other intellectual property laws.
+              The service and its original content, features, and functionality are owned by generatecodeqr and are protected by international copyright, trademark, and other intellectual property laws.
             </p>
           </section>
 
           <section>
             <h2 className="text-2xl font-bold mb-4">Limitation of Liability</h2>
             <p className="text-gray-300">
-              In no event shall QR Generator.ai be liable for any indirect, incidental, special, consequential, or punitive damages resulting from your use of or inability to use the service.
+              In no event shall generatecodeqr be liable for any indirect, incidental, special, consequential, or punitive damages resulting from your use of or inability to use the service.
             </p>
           </section>
 

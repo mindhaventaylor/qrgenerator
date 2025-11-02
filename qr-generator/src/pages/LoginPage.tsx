@@ -6,8 +6,8 @@ import { QrCode, Mail, Lock, Chrome } from 'lucide-react';
 
 export function LoginPage() {
   useSEO({
-    title: 'Login - QR Generator AI',
-    description: 'Login to your QR Generator AI account to create and manage dynamic QR codes with advanced analytics.',
+    title: 'Login - generatecodeqr',
+    description: 'Login to your generatecodeqr account to create and manage dynamic QR codes with advanced analytics.',
     url: 'https://qrgenerator-liart.vercel.app/login'
   });
   const [email, setEmail] = useState('');
@@ -49,7 +49,7 @@ export function LoginPage() {
         <div className="text-center mb-8">
           <Link to="/" className="inline-flex items-center space-x-2 text-white hover:opacity-80 transition">
             <QrCode className="w-10 h-10 text-purple-400" />
-            <span className="text-3xl font-bold">QR generator.ai</span>
+            <span className="text-3xl font-bold">generatecodeqr</span>
           </Link>
         </div>
 

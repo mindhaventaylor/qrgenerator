@@ -5,7 +5,7 @@ import { useSEO } from '../hooks/useSEO';
 
 export function HomePage() {
   useSEO({
-    title: 'QR Generator AI - Create Dynamic QR Codes with Advanced Analytics | $5/Month',
+    title: 'generatecodeqr - Create Dynamic QR Codes with Advanced Analytics | $5/Month',
     description: 'Generate dynamic QR codes with real-time analytics, advanced customization, and tracking. Simple $5/month pricing with no hidden fees or scams. Create QR codes for websites, vCard, WiFi, social media, and more.',
     keywords: 'qr code generator, dynamic qr codes, qr code analytics, qr code creator, business qr codes, qr code tracking, qr code maker, free qr code, honest pricing',
     url: 'https://qrgenerator-liart.vercel.app/'
@@ -60,7 +60,7 @@ export function HomePage() {
       <nav className="container mx-auto px-4 py-4 md:px-6 md:py-6 flex justify-between items-center">
         <div className="flex items-center space-x-2">
           <QrCode className="w-6 h-6 md:w-8 md:h-8 text-purple-400" />
-          <span className="text-xl md:text-2xl font-bold">QR generator.ai</span>
+          <span className="text-xl md:text-2xl font-bold">generatecodeqr</span>
         </div>
         <div className="hidden md:flex items-center space-x-4">
           <Link to="/faq" className="hover:text-purple-300 transition">FAQ</Link>
@@ -256,7 +256,7 @@ export function HomePage() {
             </div>
           </div>
           <div className="text-center mt-8 text-gray-400">
-            © 2025 QR Generator.ai. All rights reserved.
+            © 2025 generatecodeqr. All rights reserved.
           </div>
         </div>
       </footer>
