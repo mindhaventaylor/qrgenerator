@@ -41,15 +41,17 @@ export function LinksPage() {
       setError('Invalid QR code ID');
       setLoading(false);
     }
-  }, [id, user]);
-
+  }, [id]);
+  
+  // Separate effect for user changes
   useEffect(() => {
-    if (qrUserId && user) {
+    if (user && qrUserId) {
+      console.log('Checking ownership:', { userId: user.id, qrUserId });
       setIsOwner(qrUserId === user.id);
     } else {
       setIsOwner(false);
     }
-  }, [qrUserId, user]);
+  }, [user, qrUserId]);
 
   async function loadQRCode() {
     if (!id) return;
@@ -57,7 +59,7 @@ export function LinksPage() {
     try {
       const { data, error: fetchError } = await supabase
         .from('qr_codes')
-        .select('content, name, user_id')
+        .select('id, content, name, user_id')
         .eq('id', id)
         .eq('type', 'links')
         .single();
@@ -65,17 +67,29 @@ export function LinksPage() {
       if (fetchError) throw fetchError;
 
       if (data) {
-        setLinksContent(data.content || {});
         setQrName(data.name || 'Links');
         setQrUserId(data.user_id);
         
         // Normalize links - handle both array and single link formats
         const content = data.content || {};
+        let normalizedContent = { ...content };
+        
         if (!content.links && (content.url || content.title)) {
           // Convert single link to array format
-          content.links = [{ url: content.url || '', title: content.title || 'Link' }];
-          setLinksContent(content);
+          normalizedContent.links = [{ url: content.url || '', title: content.title || 'Link' }];
+        } else if (!content.links) {
+          // Ensure links array exists even if empty
+          normalizedContent.links = [];
         }
+        
+        setLinksContent(normalizedContent);
+        
+        console.log('QR Code loaded:', {
+          id: data.id,
+          user_id: data.user_id,
+          content: normalizedContent,
+          links: normalizedContent.links
+        });
       } else {
         setError('QR code not found');
       }
@@ -93,43 +107,119 @@ export function LinksPage() {
       return;
     }
 
-    if (!id || !isOwner) {
-      alert('You must be the owner to add links');
+    console.log('=== ADDING LINK ===');
+    console.log('User:', user?.id);
+    console.log('QR User ID:', qrUserId);
+    console.log('Is Owner:', isOwner);
+    console.log('QR Code ID:', id);
+
+    if (!id) {
+      alert('Invalid QR code ID');
+      return;
+    }
+
+    if (!user) {
+      alert('You must be logged in to add links. Please sign in first.');
+      return;
+    }
+
+    if (!isOwner) {
+      alert(`You must be the owner to add links. Current user: ${user?.id}, QR owner: ${qrUserId}`);
       return;
     }
 
     setAddingLink(true);
     try {
       const currentLinks = linksContent?.links || [];
-      const updatedLinks = [...currentLinks, {
-        title: newLink.title.trim() || newLink.url,
-        url: newLink.url.trim()
-      }];
+      console.log('Current links:', currentLinks);
+      
+      // Format URL properly
+      let formattedUrl = newLink.url.trim();
+      if (!formattedUrl.startsWith('http://') && !formattedUrl.startsWith('https://')) {
+        formattedUrl = `https://${formattedUrl}`;
+      }
+      
+      const newLinkItem = {
+        title: newLink.title.trim() || formattedUrl,
+        url: formattedUrl
+      };
 
-      const { error: updateError } = await supabase
+      console.log('New link item:', newLinkItem);
+
+      // Check for duplicates
+      if (currentLinks.some(link => link.url === formattedUrl || link.url === formattedUrl.replace(/^https?:\/\//, ''))) {
+        alert('This link already exists!');
+        setAddingLink(false);
+        return;
+      }
+
+      const updatedLinks = [...currentLinks, newLinkItem];
+      console.log('Updated links array:', updatedLinks);
+
+      // Get the full current content to preserve other fields
+      const { data: currentQRCode, error: fetchError } = await supabase
+        .from('qr_codes')
+        .select('content')
+        .eq('id', id)
+        .single();
+
+      if (fetchError) {
+        console.error('Error fetching current QR code:', fetchError);
+        throw fetchError;
+      }
+
+      const fullContent = currentQRCode?.content || linksContent || {};
+      console.log('Full content before update:', fullContent);
+
+      const updatedContent = {
+        ...fullContent,
+        links: updatedLinks
+      };
+      console.log('Content to update:', updatedContent);
+
+      const { data: updateData, error: updateError } = await supabase
         .from('qr_codes')
         .update({
-          content: {
-            ...linksContent,
-            links: updatedLinks
-          }
+          content: updatedContent
         })
-        .eq('id', id);
+        .eq('id', id)
+        .select();
 
-      if (updateError) throw updateError;
+      console.log('Update response:', { updateData, updateError });
 
-      // Update local state
-      setLinksContent({
-        ...linksContent,
-        links: updatedLinks
-      });
+      if (updateError) {
+        console.error('Update error details:', updateError);
+        throw updateError;
+      }
 
-      // Reset form
+      // Update local state immediately
+      setLinksContent(updatedContent);
+
+      // Reload the QR code to ensure we have the latest data
+      await loadQRCode();
+
+      // Reset form but keep it open for adding more links
       setNewLink({ title: '', url: '' });
-      setShowAddForm(false);
+      
+      // Show success feedback (form stays open)
+      const successMsg = document.createElement('div');
+      successMsg.className = 'fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50';
+      successMsg.textContent = '✓ Link added successfully!';
+      document.body.appendChild(successMsg);
+      setTimeout(() => {
+        if (document.body.contains(successMsg)) {
+          document.body.removeChild(successMsg);
+        }
+      }, 2000);
     } catch (err: any) {
       console.error('Error adding link:', err);
-      alert('Failed to add link: ' + err.message);
+      console.error('Error details:', {
+        message: err.message,
+        code: err.code,
+        details: err.details,
+        hint: err.hint
+      });
+      alert(`Failed to add link: ${err.message || 'Unknown error'}. Check console for details.`);
     } finally {
       setAddingLink(false);
     }
@@ -245,14 +335,41 @@ export function LinksPage() {
                 ))}
               </div>
 
-              {isOwner && (
-                <button
-                  onClick={() => setShowAddForm(!showAddForm)}
-                  className="w-full bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-lg font-semibold transition mb-4"
-                >
-                  {showAddForm ? 'Cancel' : '+ Add More Links'}
-                </button>
+          {isOwner ? (
+            <>
+              <button
+                onClick={() => {
+                  setShowAddForm(!showAddForm);
+                  if (!showAddForm) {
+                    setNewLink({ title: '', url: '' });
+                  }
+                }}
+                className="w-full bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-lg font-semibold transition mb-4"
+              >
+                {showAddForm ? 'Cancel Adding Links' : '+ Add More Links'}
+              </button>
+              
+              {showAddForm && (
+                <p className="text-sm text-gray-600 text-center mb-2">
+                  💡 Tip: Keep the form open to add multiple links quickly!
+                </p>
               )}
+            </>
+          ) : user ? (
+            <div className="text-center py-4 text-gray-500 text-sm">
+              <p>Only the QR code owner can add links to this collection.</p>
+            </div>
+          ) : (
+            <div className="text-center py-4">
+              <p className="text-gray-500 text-sm mb-2">Sign in to add links to this collection.</p>
+              <button
+                onClick={() => navigate('/login')}
+                className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-lg font-semibold transition"
+              >
+                Sign In
+              </button>
+            </div>
+          )}
             </>
           )}
 
@@ -285,13 +402,24 @@ export function LinksPage() {
                     required
                   />
                 </div>
-                <button
-                  onClick={handleAddLink}
-                  disabled={addingLink || !newLink.url.trim()}
-                  className="w-full bg-purple-600 hover:bg-purple-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white px-6 py-3 rounded-lg font-semibold transition"
-                >
-                  {addingLink ? 'Adding...' : 'Add Link'}
-                </button>
+                <div className="flex gap-3">
+                  <button
+                    onClick={handleAddLink}
+                    disabled={addingLink || !newLink.url.trim()}
+                    className="flex-1 bg-purple-600 hover:bg-purple-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white px-6 py-3 rounded-lg font-semibold transition"
+                  >
+                    {addingLink ? 'Adding...' : 'Add Link'}
+                  </button>
+                  <button
+                    onClick={() => {
+                      setNewLink({ title: '', url: '' });
+                    }}
+                    className="px-4 py-3 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg font-semibold transition"
+                    title="Clear form"
+                  >
+                    Clear
+                  </button>
+                </div>
               </div>
             </div>
           )}

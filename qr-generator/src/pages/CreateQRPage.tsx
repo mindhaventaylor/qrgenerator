@@ -209,8 +209,8 @@ export function CreateQRPage() {
       setError('Please enter at least one social media URL');
       return;
     }
-    if (selectedType === 'links' && !content.links?.[0]?.url && !content.url) {
-      setError('Please enter at least one link');
+    if (selectedType === 'links' && (!content.links || content.links.length === 0)) {
+      setError('Please add at least one link');
       return;
     }
     if (selectedType === 'menu' && !content.url && !content.menuUrl) {
@@ -760,16 +760,114 @@ export function CreateQRPage() {
             )}
 
             {selectedType === 'links' && (
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Links</label>
-                <input
-                  type="url"
-                  value={content.links?.[0]?.url || content.url || ''}
-                  onChange={(e) => setContent({ ...content, url: e.target.value, links: [{ url: e.target.value, title: 'Link 1' }] })}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
-                  placeholder="https://example.com"
-                />
-                <p className="text-xs text-gray-500 mt-1">Add your first link (more can be added later)</p>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-3">
+                    Links Collection
+                  </label>
+                  
+                  {(content.links || []).length > 0 && (
+                    <div className="space-y-3 mb-4">
+                      {content.links.map((link: { url: string; title: string }, index: number) => (
+                        <div key={index} className="flex gap-2 items-start p-3 bg-gray-50 rounded-lg border border-gray-200">
+                          <div className="flex-1">
+                            <div className="text-sm font-medium text-gray-700 mb-1">
+                              {link.title || `Link ${index + 1}`}
+                            </div>
+                            <div className="text-xs text-gray-500 truncate">
+                              {link.url}
+                            </div>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const updatedLinks = content.links.filter((_: any, i: number) => i !== index);
+                              setContent({ ...content, links: updatedLinks });
+                            }}
+                            className="text-red-500 hover:text-red-700 text-sm font-medium px-2 py-1"
+                          >
+                            Remove
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  
+                  <div className="border-2 border-dashed border-purple-300 rounded-lg p-4 bg-purple-50">
+                    <h4 className="text-sm font-semibold text-gray-700 mb-3">Add New Link</h4>
+                    <div className="space-y-3">
+                      <div>
+                        <label className="block text-xs font-medium text-gray-600 mb-1">
+                          Link Title (optional)
+                        </label>
+                        <input
+                          type="text"
+                          id="new-link-title"
+                          placeholder="e.g., My Website"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-gray-600 mb-1">
+                          URL *
+                        </label>
+                        <div className="flex gap-2">
+                          <input
+                            type="url"
+                            id="new-link-url"
+                            placeholder="https://example.com"
+                            className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const titleInput = document.getElementById('new-link-title') as HTMLInputElement;
+                              const urlInput = document.getElementById('new-link-url') as HTMLInputElement;
+                              
+                              if (!urlInput.value.trim()) {
+                                setError('Please enter a URL');
+                                return;
+                              }
+                              
+                              let formattedUrl = urlInput.value.trim();
+                              if (!formattedUrl.startsWith('http://') && !formattedUrl.startsWith('https://')) {
+                                formattedUrl = `https://${formattedUrl}`;
+                              }
+                              
+                              const currentLinks = content.links || [];
+                              const newLink = {
+                                title: titleInput.value.trim() || formattedUrl,
+                                url: formattedUrl
+                              };
+                              
+                              // Check for duplicates
+                              if (currentLinks.some((link: { url: string }) => link.url === formattedUrl)) {
+                                setError('This link already exists!');
+                                return;
+                              }
+                              
+                              setContent({
+                                ...content,
+                                links: [...currentLinks, newLink]
+                              });
+                              
+                              // Clear inputs
+                              titleInput.value = '';
+                              urlInput.value = '';
+                              setError('');
+                            }}
+                            className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-medium text-sm transition"
+                          >
+                            Add
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                    <p className="text-xs text-gray-500 mt-2">
+                      💡 Add multiple links to create a links collection QR code
+                    </p>
+                  </div>
+                </div>
               </div>
             )}
 
