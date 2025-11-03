@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { createQRCode } from '../lib/qrGenerator';
+import { createQRCode, uploadFile } from '../lib/qrGenerator';
 import { checkSubscriptionStatus } from '../lib/subscriptionCheck';
 import { useSEO } from '../hooks/useSEO';
 import {
@@ -62,8 +62,43 @@ export function CreateQRPage() {
   const [canCreateQR, setCanCreateQR] = useState(false);
   const [subscriptionMessage, setSubscriptionMessage] = useState('');
   const [enableTracking, setEnableTracking] = useState(true);
+  const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState('');
   const { user } = useAuth();
   const navigate = useNavigate();
+
+  async function handleFileUpload(event: React.ChangeEvent<HTMLInputElement>, type: 'pdf' | 'images' | 'video' | 'mp3') {
+    const file = event.target.files?.[0];
+    if (!file || !user) return;
+
+    setUploading(true);
+    setUploadProgress(`Uploading ${file.name}...`);
+
+    try {
+      const publicUrl = await uploadFile(file, user.id, 'documents');
+      setUploadProgress(`Upload complete!`);
+      
+      // Update content with the uploaded file URL
+      if (type === 'pdf') {
+        setContent({ ...content, url: publicUrl, pdfUrl: publicUrl });
+      } else if (type === 'images') {
+        setContent({ ...content, url: publicUrl, imageUrl: publicUrl });
+      } else if (type === 'video') {
+        setContent({ ...content, url: publicUrl, videoUrl: publicUrl });
+      } else if (type === 'mp3') {
+        setContent({ ...content, url: publicUrl, audioUrl: publicUrl });
+      }
+      
+      setTimeout(() => {
+        setUploadProgress('');
+        setUploading(false);
+      }, 2000);
+    } catch (error: any) {
+      setError(error.message || 'Failed to upload file');
+      setUploadProgress('');
+      setUploading(false);
+    }
+  }
 
   useEffect(() => {
     async function verifySubscription() {
@@ -114,6 +149,18 @@ export function CreateQRPage() {
       setError('Please enter a website URL');
       return;
     }
+    if (selectedType === 'pdf' && !content.url && !content.pdfUrl) {
+      setError('Please enter a PDF URL');
+      return;
+    }
+    if (selectedType === 'images' && !content.url && !content.imageUrl && !content.images?.[0]?.url) {
+      setError('Please enter at least one image URL');
+      return;
+    }
+    if (selectedType === 'video' && !content.url && !content.videoUrl) {
+      setError('Please enter a video URL');
+      return;
+    }
     if (selectedType === 'vcard' && (!content.firstName || !content.phone)) {
       setError('Please fill in at least first name and phone number');
       return;
@@ -134,8 +181,32 @@ export function CreateQRPage() {
       setError('Please enter an Instagram username');
       return;
     }
-    if (selectedType === 'links' && !content.links?.[0]?.url) {
+    if (selectedType === 'social' && !content.url && !content.facebookUrl && !content.instagramUrl) {
+      setError('Please enter at least one social media URL');
+      return;
+    }
+    if (selectedType === 'links' && !content.links?.[0]?.url && !content.url) {
       setError('Please enter at least one link');
+      return;
+    }
+    if (selectedType === 'menu' && !content.url && !content.menuUrl) {
+      setError('Please enter a menu URL');
+      return;
+    }
+    if (selectedType === 'business' && !content.url && !content.website && !content.phone) {
+      setError('Please enter at least a website URL or phone number');
+      return;
+    }
+    if (selectedType === 'mp3' && !content.url && !content.audioUrl) {
+      setError('Please enter an audio file URL');
+      return;
+    }
+    if (selectedType === 'apps' && !content.appId) {
+      setError('Please enter an app ID');
+      return;
+    }
+    if (selectedType === 'coupon' && !content.url && !content.code && !content.text) {
+      setError('Please enter a coupon code, URL, or text');
       return;
     }
 
@@ -264,6 +335,36 @@ export function CreateQRPage() {
                     placeholder="john@example.com"
                   />
                 </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Company (optional)</label>
+                  <input
+                    type="text"
+                    value={content.company || ''}
+                    onChange={(e) => setContent({ ...content, company: e.target.value })}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    placeholder="Company Name"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Website (optional)</label>
+                  <input
+                    type="url"
+                    value={content.website || ''}
+                    onChange={(e) => setContent({ ...content, website: e.target.value })}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    placeholder="https://example.com"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Address (optional)</label>
+                  <input
+                    type="text"
+                    value={content.address || ''}
+                    onChange={(e) => setContent({ ...content, address: e.target.value })}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    placeholder="123 Main St, City, State"
+                  />
+                </div>
               </>
             )}
 
@@ -355,13 +456,292 @@ export function CreateQRPage() {
               </div>
             )}
 
+            {selectedType === 'pdf' && (
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Upload PDF</label>
+                  <input
+                    type="file"
+                    accept=".pdf,application/pdf"
+                    onChange={(e) => handleFileUpload(e, 'pdf')}
+                    disabled={uploading}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:opacity-50"
+                  />
+                  {uploadProgress && (
+                    <p className="text-sm text-green-600 mt-2">{uploadProgress}</p>
+                  )}
+                </div>
+                <div className="flex items-center">
+                  <div className="flex-1 border-t border-gray-300"></div>
+                  <span className="px-4 text-sm text-gray-500">OR</span>
+                  <div className="flex-1 border-t border-gray-300"></div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">PDF URL</label>
+                  <input
+                    type="url"
+                    value={content.url || content.pdfUrl || ''}
+                    onChange={(e) => setContent({ ...content, url: e.target.value, pdfUrl: e.target.value })}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    placeholder="https://example.com/document.pdf"
+                  />
+                </div>
+              </div>
+            )}
+
+            {selectedType === 'images' && (
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Upload Image</label>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => handleFileUpload(e, 'images')}
+                    disabled={uploading}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:opacity-50"
+                  />
+                  {uploadProgress && (
+                    <p className="text-sm text-green-600 mt-2">{uploadProgress}</p>
+                  )}
+                </div>
+                <div className="flex items-center">
+                  <div className="flex-1 border-t border-gray-300"></div>
+                  <span className="px-4 text-sm text-gray-500">OR</span>
+                  <div className="flex-1 border-t border-gray-300"></div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Image URL</label>
+                  <input
+                    type="url"
+                    value={content.url || content.imageUrl || ''}
+                    onChange={(e) => setContent({ ...content, url: e.target.value, imageUrl: e.target.value })}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    placeholder="https://example.com/image.jpg"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">Enter URL to first image (more images can be added later)</p>
+                </div>
+              </div>
+            )}
+
+            {selectedType === 'video' && (
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Upload Video</label>
+                  <input
+                    type="file"
+                    accept="video/*"
+                    onChange={(e) => handleFileUpload(e, 'video')}
+                    disabled={uploading}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:opacity-50"
+                  />
+                  {uploadProgress && (
+                    <p className="text-sm text-green-600 mt-2">{uploadProgress}</p>
+                  )}
+                </div>
+                <div className="flex items-center">
+                  <div className="flex-1 border-t border-gray-300"></div>
+                  <span className="px-4 text-sm text-gray-500">OR</span>
+                  <div className="flex-1 border-t border-gray-300"></div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Video URL</label>
+                  <input
+                    type="url"
+                    value={content.url || content.videoUrl || ''}
+                    onChange={(e) => setContent({ ...content, url: e.target.value, videoUrl: e.target.value })}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    placeholder="https://youtube.com/watch?v=..."
+                  />
+                </div>
+              </div>
+            )}
+
+            {selectedType === 'menu' && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Menu URL</label>
+                <input
+                  type="url"
+                  value={content.url || content.menuUrl || ''}
+                  onChange={(e) => setContent({ ...content, url: e.target.value, menuUrl: e.target.value })}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  placeholder="https://example.com/menu"
+                />
+              </div>
+            )}
+
+            {selectedType === 'business' && (
+              <>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Business Name</label>
+                  <input
+                    type="text"
+                    value={content.businessName || ''}
+                    onChange={(e) => setContent({ ...content, businessName: e.target.value })}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    placeholder="My Business"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Website URL</label>
+                  <input
+                    type="url"
+                    value={content.url || content.website || ''}
+                    onChange={(e) => setContent({ ...content, url: e.target.value, website: e.target.value })}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    placeholder="https://mybusiness.com"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Phone</label>
+                  <input
+                    type="tel"
+                    value={content.phone || ''}
+                    onChange={(e) => setContent({ ...content, phone: e.target.value })}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    placeholder="+1234567890"
+                  />
+                </div>
+              </>
+            )}
+
+            {selectedType === 'mp3' && (
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Upload Audio File</label>
+                  <input
+                    type="file"
+                    accept="audio/*,.mp3"
+                    onChange={(e) => handleFileUpload(e, 'mp3')}
+                    disabled={uploading}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:opacity-50"
+                  />
+                  {uploadProgress && (
+                    <p className="text-sm text-green-600 mt-2">{uploadProgress}</p>
+                  )}
+                </div>
+                <div className="flex items-center">
+                  <div className="flex-1 border-t border-gray-300"></div>
+                  <span className="px-4 text-sm text-gray-500">OR</span>
+                  <div className="flex-1 border-t border-gray-300"></div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Audio File URL</label>
+                  <input
+                    type="url"
+                    value={content.url || content.audioUrl || ''}
+                    onChange={(e) => setContent({ ...content, url: e.target.value, audioUrl: e.target.value })}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    placeholder="https://example.com/audio.mp3"
+                  />
+                </div>
+              </div>
+            )}
+
+            {selectedType === 'apps' && (
+              <>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">App Store</label>
+                  <select
+                    value={content.store || 'ios'}
+                    onChange={(e) => setContent({ ...content, store: e.target.value })}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  >
+                    <option value="ios">Apple App Store</option>
+                    <option value="android">Google Play Store</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">App ID</label>
+                  <input
+                    type="text"
+                    value={content.appId || ''}
+                    onChange={(e) => setContent({ ...content, appId: e.target.value })}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    placeholder="123456789"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">Enter the app ID from the store</p>
+                </div>
+              </>
+            )}
+
+            {selectedType === 'coupon' && (
+              <>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Coupon Code</label>
+                  <input
+                    type="text"
+                    value={content.code || ''}
+                    onChange={(e) => setContent({ ...content, code: e.target.value })}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    placeholder="SAVE20"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Coupon URL (optional)</label>
+                  <input
+                    type="url"
+                    value={content.url || ''}
+                    onChange={(e) => setContent({ ...content, url: e.target.value })}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    placeholder="https://example.com/redeem"
+                  />
+                </div>
+              </>
+            )}
+
+            {selectedType === 'social' && (
+              <>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Facebook URL (optional)</label>
+                  <input
+                    type="url"
+                    value={content.facebookUrl || ''}
+                    onChange={(e) => setContent({ ...content, facebookUrl: e.target.value })}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    placeholder="https://facebook.com/yourpage"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Instagram URL (optional)</label>
+                  <input
+                    type="url"
+                    value={content.instagramUrl || ''}
+                    onChange={(e) => setContent({ ...content, instagramUrl: e.target.value })}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    placeholder="https://instagram.com/yourprofile"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Twitter/X URL (optional)</label>
+                  <input
+                    type="url"
+                    value={content.twitterUrl || ''}
+                    onChange={(e) => setContent({ ...content, twitterUrl: e.target.value })}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    placeholder="https://twitter.com/yourhandle"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Primary URL</label>
+                  <input
+                    type="url"
+                    value={content.url || ''}
+                    onChange={(e) => setContent({ ...content, url: e.target.value })}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    placeholder="https://yourwebsite.com"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">Enter at least one social media URL or your website</p>
+                </div>
+              </>
+            )}
+
             {selectedType === 'links' && (
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Links</label>
                 <input
                   type="url"
-                  value={content.links?.[0]?.url || ''}
-                  onChange={(e) => setContent({ ...content, links: [{ url: e.target.value, title: 'Link 1' }] })}
+                  value={content.links?.[0]?.url || content.url || ''}
+                  onChange={(e) => setContent({ ...content, url: e.target.value, links: [{ url: e.target.value, title: 'Link 1' }] })}
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
                   placeholder="https://example.com"
                 />

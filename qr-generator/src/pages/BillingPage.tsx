@@ -145,6 +145,9 @@ export function BillingPage() {
     if (!user) return;
 
     try {
+      console.log('=== LOADING SUBSCRIPTION ===');
+      console.log('User ID:', user.id);
+      
       const { data, error } = await supabase
         .from('subscriptions')
         .select('*')
@@ -152,7 +155,17 @@ export function BillingPage() {
         .order('created_at', { ascending: false })
         .maybeSingle();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Subscription query error:', error);
+        throw error;
+      }
+      
+      console.log('=== SUBSCRIPTION DATA FROM DB ===');
+      console.log('Raw data:', JSON.stringify(data, null, 2));
+      console.log('Has stripe_customer_id:', !!data?.stripe_customer_id);
+      console.log('stripe_customer_id value:', data?.stripe_customer_id);
+      console.log('All subscription fields:', data ? Object.keys(data) : 'null');
+      
       setSubscription(data);
     } catch (error) {
       console.error('Error loading subscription:', error);
@@ -184,16 +197,33 @@ export function BillingPage() {
 
   async function handleManageSubscription() {
     if (!subscription?.stripe_customer_id) {
-      alert('No Stripe customer ID found');
+      alert('No Stripe customer ID found. Please contact support if this issue persists.');
+      return;
+    }
+
+    if (!user) {
+      alert('You must be logged in to manage your subscription');
       return;
     }
 
     setProcessing(true);
+    
     try {
-      await createPortalSession(user!.id, subscription.stripe_customer_id);
+      console.log('=== MANAGING SUBSCRIPTION ===');
+      console.log('User ID:', user.id);
+      console.log('Subscription object:', JSON.stringify(subscription, null, 2));
+      console.log('Stripe Customer ID from DB:', subscription.stripe_customer_id);
+      console.log('Stripe Customer ID type:', typeof subscription.stripe_customer_id);
+      console.log('Stripe Customer ID length:', subscription.stripe_customer_id?.length);
+      
+      await createPortalSession(user.id, subscription.stripe_customer_id);
+      // Note: createPortalSession redirects to Stripe Portal, so we don't reset processing here
+      // If we reach here, the redirect didn't happen and there was an error
+      // But the error should have been thrown, so this is just a safety net
     } catch (error: any) {
       console.error('Portal error:', error);
-      alert(error.message || 'Failed to open subscription management. Please try again.');
+      const errorMessage = error.message || 'Failed to open subscription management. Please try again.';
+      alert(errorMessage);
       setProcessing(false);
     }
   }

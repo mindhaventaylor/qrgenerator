@@ -11,6 +11,9 @@ export interface QRContent {
   lastName?: string;
   phone?: string;
   email?: string;
+  company?: string;
+  website?: string;
+  address?: string;
   ssid?: string;
   password?: string;
   encryption?: string;
@@ -18,6 +21,21 @@ export interface QRContent {
   pageId?: string;
   username?: string;
   links?: Array<{ url: string; title: string }>;
+  // Additional fields for various QR types
+  pdfUrl?: string;
+  imageUrl?: string;
+  images?: Array<{ url: string }>;
+  videoUrl?: string;
+  menuUrl?: string;
+  businessName?: string;
+  audioUrl?: string;
+  store?: 'ios' | 'android';
+  appId?: string;
+  code?: string;
+  text?: string;
+  facebookUrl?: string;
+  instagramUrl?: string;
+  twitterUrl?: string;
   [key: string]: any;
 }
 
@@ -36,27 +54,82 @@ export function buildQRData(type: string, content: QRContent, qrCodeId?: string)
     case 'website':
       return content.url || '';
     
+    case 'pdf':
+      return content.url || content.pdfUrl || '';
+    
+    case 'images':
+      // For multiple images, use first image URL or a gallery URL
+      return content.url || content.imageUrl || content.images?.[0]?.url || '';
+    
+    case 'video':
+      return content.url || content.videoUrl || '';
+    
     case 'vcard':
-      return `BEGIN:VCARD\nVERSION:3.0\nFN:${content.firstName || ''} ${content.lastName || ''}\nTEL:${content.phone || ''}\nEMAIL:${content.email || ''}\nEND:VCARD`;
+      const vcardName = `${content.firstName || ''} ${content.lastName || ''}`.trim();
+      const vcard = [
+        'BEGIN:VCARD',
+        'VERSION:3.0',
+        `FN:${vcardName}`,
+        content.phone ? `TEL:${content.phone}` : '',
+        content.email ? `EMAIL:${content.email}` : '',
+        content.company ? `ORG:${content.company}` : '',
+        content.website ? `URL:${content.website}` : '',
+        content.address ? `ADR:;;${content.address};;;;` : '',
+        'END:VCARD'
+      ].filter(line => line).join('\n');
+      return vcard;
     
     case 'wifi':
       return `WIFI:T:${content.encryption || 'WPA'};S:${content.ssid || ''};P:${content.password || ''};;`;
     
     case 'whatsapp':
       const message = content.message ? `?text=${encodeURIComponent(content.message)}` : '';
-      return `https://wa.me/${content.phone || ''}${message}`;
+      const phone = (content.phone || '').replace(/[^\d+]/g, '');
+      return `https://wa.me/${phone}${message}`;
     
     case 'facebook':
-      return `https://facebook.com/${content.pageId || ''}`;
+      const fbId = (content.pageId || '').replace(/^https?:\/\/(www\.)?(facebook\.com|fb\.com)\//, '').replace(/\/$/, '');
+      return `https://facebook.com/${fbId}`;
     
     case 'instagram':
-      return `https://instagram.com/${content.username?.replace('@', '') || ''}`;
+      const igUsername = (content.username || '').replace('@', '').replace(/^https?:\/\/(www\.)?instagram\.com\//, '').replace(/\/$/, '');
+      return `https://instagram.com/${igUsername}`;
+    
+    case 'social':
+      // Social media - redirect to first platform URL
+      return content.url || content.facebookUrl || content.instagramUrl || content.twitterUrl || '';
     
     case 'links':
-      return content.links?.[0]?.url || '';
+      return content.links?.[0]?.url || content.url || '';
+    
+    case 'menu':
+      // Restaurant menu - use URL to menu or JSON data
+      return content.url || content.menuUrl || JSON.stringify(content);
+    
+    case 'business':
+      // Business info - can be URL or vCard-like format
+      return content.url || content.website || `tel:${content.phone || ''}` || '';
+    
+    case 'mp3':
+      return content.url || content.audioUrl || '';
+    
+    case 'apps':
+      // App store redirect
+      const appStore = content.store || 'ios'; // ios or android
+      const appId = content.appId || '';
+      if (appStore === 'ios') {
+        return `https://apps.apple.com/app/id${appId}`;
+      } else {
+        return `https://play.google.com/store/apps/details?id=${appId}`;
+      }
+    
+    case 'coupon':
+      // Coupon - can be URL or text
+      return content.url || content.code || content.text || '';
     
     default:
-      return JSON.stringify(content);
+      // Fallback to URL if available, otherwise JSON
+      return content.url || JSON.stringify(content);
   }
 }
 
@@ -76,6 +149,48 @@ export async function generateQRImage(qrData: string, size: number = 500): Promi
     console.error('QR generation error:', error);
     throw new Error('Failed to generate QR code. Please try again.');
   }
+}
+
+/**
+ * Uploads a file to Supabase Storage and returns public URL
+ */
+export async function uploadFile(file: File, userId: string, folder: string = 'qr-images'): Promise<string> {
+  const timestamp = Date.now();
+  const fileExt = file.name.split('.').pop();
+  const fileName = `${timestamp}.${fileExt}`;
+  const filePath = `${userId}/${folder}/${fileName}`;
+
+  // Upload to Supabase Storage
+  const { data, error } = await supabase.storage
+    .from('qr-images')
+    .upload(filePath, file, {
+      contentType: file.type,
+      upsert: true
+    });
+
+  if (error) {
+    console.error('Upload error:', error);
+    
+    if (error.message?.includes('The resource already exists')) {
+      const { data: { publicUrl } } = supabase.storage
+        .from('qr-images')
+        .getPublicUrl(filePath);
+      return publicUrl;
+    }
+    
+    if (error.message?.includes('new row violates row-level security')) {
+      throw new Error('Storage permission denied. Please check RLS policies.');
+    }
+    
+    throw new Error(`Failed to upload file: ${error.message}`);
+  }
+
+  // Get public URL
+  const { data: { publicUrl } } = supabase.storage
+    .from('qr-images')
+    .getPublicUrl(filePath);
+
+  return publicUrl;
 }
 
 /**
