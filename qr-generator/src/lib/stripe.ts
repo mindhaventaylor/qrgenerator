@@ -130,8 +130,10 @@ export async function createPortalSession(userId: string, stripeCustomerId: stri
     console.log('Error:', error);
     console.log('Error type:', typeof error);
     
-    // Extract response body from error context
-    let responseBody = null;
+    // Extract response body from error context - SYNCHRONOUSLY
+    let responseBody: any = null;
+    let errorMessageFromResponse = null;
+    
     if (error && (error as any).context) {
       const response = (error as any).context as Response;
       if (response) {
@@ -140,10 +142,11 @@ export async function createPortalSession(userId: string, stripeCustomerId: stri
         console.log('Response statusText:', response.statusText);
         console.log('Response URL:', response.url);
         
-        // Try to read response body synchronously
+        // Try to read response body - we need this synchronously
         try {
-          // Clone the response so we can read it without consuming it
+          // Clone and try to get text immediately (though this might not work)
           const clonedResponse = response.clone();
+          // Store for async logging but also try to use it
           clonedResponse.text().then((text) => {
             console.log('=== ACTUAL ERROR RESPONSE BODY (async) ===');
             console.log(text);
@@ -152,6 +155,8 @@ export async function createPortalSession(userId: string, stripeCustomerId: stri
               console.log('Parsed error JSON:', JSON.stringify(json, null, 2));
               if (json.error) {
                 console.error('Error from function:', json.error.message || json.error);
+                // Store for potential use
+                errorMessageFromResponse = json.error.message;
               }
             } catch (e) {
               console.log('Response is not JSON:', text);
@@ -163,6 +168,13 @@ export async function createPortalSession(userId: string, stripeCustomerId: stri
           console.error('Could not access response:', e);
         }
       }
+    }
+    
+    // Also check if data already has the error (from the invoke response)
+    if (data && (data as any).error) {
+      responseBody = (data as any).error;
+      errorMessageFromResponse = (data as any).error.message || (data as any).error.details;
+      console.log('Error found in data object:', errorMessageFromResponse);
     }
     
     if (error) {
@@ -177,15 +189,30 @@ export async function createPortalSession(userId: string, stripeCustomerId: stri
       // Try to get the response body synchronously if possible
       let errorMessage = error.message || 'Failed to create portal session';
       
-      // Check if data contains error information
+      // Prioritize error message from response body
+      if (errorMessageFromResponse) {
+        errorMessage = errorMessageFromResponse;
+        console.log('Using error message from response:', errorMessage);
+      }
+      
+      // Check if data contains error information (this might be available)
       if (data && (data as any).error) {
         const funcError = (data as any).error;
         console.error('Function returned error in data:', funcError);
-        errorMessage = funcError.message || funcError.details || errorMessage;
+        const funcErrorMessage = funcError.message || funcError.details || errorMessage;
+        errorMessage = funcErrorMessage; // Use the more detailed message
         
         // Check for specific error codes
-        if (funcError.code === 'customer_not_found' || funcError.message?.includes('No such customer')) {
+        if (funcError.code === 'customer_not_found' || funcErrorMessage?.includes('No such customer')) {
           errorMessage = 'Stripe customer not found. Your subscription may need to be recreated. Please contact support.';
+        } else if (funcErrorMessage?.includes('No configuration provided') || funcErrorMessage?.includes('billing portal') || funcErrorMessage?.includes('portal')) {
+          if (funcErrorMessage.includes('live mode')) {
+            errorMessage = 'Stripe Billing Portal is not activated in live mode. Please activate it at: https://dashboard.stripe.com/settings/billing/portal';
+          } else if (funcErrorMessage.includes('test mode')) {
+            errorMessage = 'Stripe Billing Portal is not activated in test mode. Please activate it at: https://dashboard.stripe.com/test/settings/billing/portal';
+          } else {
+            errorMessage = 'Stripe Billing Portal is not activated. Please activate it in Stripe Dashboard → Settings → Billing → Customer Portal.';
+          }
         }
       }
       
@@ -213,8 +240,15 @@ export async function createPortalSession(userId: string, stripeCustomerId: stri
           detailedMsg = 'Stripe customer not found. Your subscription may need to be recreated. Please contact support.';
         } else if (detailedMsg?.includes('customer')) {
           detailedMsg = 'Invalid Stripe customer. Please contact support.';
-        } else if (detailedMsg?.includes('billing_portal') || detailedMsg?.includes('portal')) {
-          detailedMsg = 'Stripe Billing Portal is not activated. Please contact support.';
+        } else if (detailedMsg?.includes('No configuration provided') || detailedMsg?.includes('billing portal') || detailedMsg?.includes('portal')) {
+          // Specific error for unactivated Billing Portal
+          if (detailedMsg.includes('live mode')) {
+            detailedMsg = 'Stripe Billing Portal is not activated in live mode. Please activate it in your Stripe Dashboard settings.';
+          } else if (detailedMsg.includes('test mode')) {
+            detailedMsg = 'Stripe Billing Portal is not activated in test mode. Please activate it in your Stripe Dashboard settings.';
+          } else {
+            detailedMsg = 'Stripe Billing Portal is not activated. Please activate it in your Stripe Dashboard at Settings → Billing → Customer Portal.';
+          }
         }
         
         throw new Error(detailedMsg || 'Server error. Please check Supabase function logs for details.');
