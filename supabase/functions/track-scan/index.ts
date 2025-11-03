@@ -339,7 +339,9 @@ Deno.serve(async (req) => {
                     break;
                 
                 case 'links':
-                    redirectUrl = content.links?.[0]?.url || content.url || '/';
+                    // Links QR codes should show a custom page with all links
+                    // We'll handle this specially in the response section
+                    redirectUrl = 'LINKS_PAGE'; // Special marker
                     break;
                 
                 case 'apps':
@@ -425,6 +427,13 @@ Deno.serve(async (req) => {
                 // Redirect to frontend business page
                 const frontendUrl = `${origin}/business/${qrCodeId}`;
                 console.log('Redirecting business to frontend:', frontendUrl);
+                return Response.redirect(frontendUrl, 302);
+            }
+            
+            if (redirectUrl === 'LINKS_PAGE' && qrCode) {
+                // Redirect to frontend links page
+                const frontendUrl = `${origin}/links/${qrCodeId}`;
+                console.log('Redirecting links to frontend:', frontendUrl);
                 return Response.redirect(frontendUrl, 302);
             }
             
