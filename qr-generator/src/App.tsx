@@ -18,6 +18,8 @@ import { FAQPage } from './pages/FAQPage';
 import { ContactPage } from './pages/ContactPage';
 import { PrivacyPage } from './pages/PrivacyPage';
 import { TermsPage } from './pages/TermsPage';
+import { VCardPage } from './pages/VCardPage';
+import { BusinessPage } from './pages/BusinessPage';
 
 function App() {
   return (
@@ -36,6 +38,8 @@ function App() {
           <Route path="/contact" element={<ContactPage />} />
           <Route path="/privacy" element={<PrivacyPage />} />
           <Route path="/terms" element={<TermsPage />} />
+          <Route path="/vcard/:id" element={<VCardPage />} />
+          <Route path="/business/:id" element={<BusinessPage />} />
 
           {/* Protected routes */}
           <Route
