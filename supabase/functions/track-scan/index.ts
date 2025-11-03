@@ -93,9 +93,35 @@ Deno.serve(async (req) => {
         else if (userAgent.includes('Android')) os = 'Android';
         else if (userAgent.includes('iOS') || userAgent.includes('iPhone')) os = 'iOS';
 
+        // Get QR code data FIRST to determine type before tracking
+        // This allows us to still redirect even if tracking fails
+        const qrCodeResponse = await fetch(`${supabaseUrl}/rest/v1/qr_codes?id=eq.${qrCodeId}&select=*`, {
+            headers: {
+                'Authorization': `Bearer ${serviceRoleKey}`,
+                'apikey': serviceRoleKey
+            }
+        });
+
+        let qrCode: any = null;
+        let redirectUrl = '/';
+        
+        if (qrCodeResponse.ok) {
+            const qrData = await qrCodeResponse.json();
+            console.log('QR code data retrieved, count:', qrData?.length || 0);
+            
+            if (qrData && qrData.length > 0) {
+                qrCode = qrData[0];
+                console.log('QR code type:', qrCode.type);
+                console.log('QR code content keys:', Object.keys(qrCode.content || {}));
+            }
+        } else {
+            console.warn('Failed to get QR code data, status:', qrCodeResponse.status);
+        }
+
         // Insert scan record
         console.log('=== ATTEMPTING TO INSERT SCAN RECORD ===');
         console.log('QR Code ID:', qrCodeId);
+        console.log('QR Code Type:', qrCode?.type || 'unknown');
         console.log('Supabase URL:', supabaseUrl);
         console.log('Service Role Key present:', !!serviceRoleKey);
         
@@ -113,56 +139,46 @@ Deno.serve(async (req) => {
         console.log('Scan payload:', JSON.stringify(scanPayload, null, 2));
         console.log('Request URL:', `${supabaseUrl}/rest/v1/qr_scans`);
         
-        const scanResponse = await fetch(`${supabaseUrl}/rest/v1/qr_scans`, {
-            method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${serviceRoleKey}`,
-                'apikey': serviceRoleKey,
-                'Content-Type': 'application/json',
-                'Prefer': 'return=representation'
-            },
-            body: JSON.stringify(scanPayload)
-        });
-
-        console.log('=== SCAN INSERT RESPONSE ===');
-        console.log('Status:', scanResponse.status);
-        console.log('Status Text:', scanResponse.statusText);
-        console.log('Headers:', JSON.stringify(Object.fromEntries(scanResponse.headers.entries())));
-        
-        if (!scanResponse.ok) {
-            const errorText = await scanResponse.text();
-            console.error('=== SCAN INSERT FAILED ===');
-            console.error('Status Code:', scanResponse.status);
-            console.error('Status Text:', scanResponse.statusText);
-            console.error('Error Response Body:', errorText);
-            console.error('Request Headers Used:', {
-                'Authorization': `Bearer ${serviceRoleKey?.substring(0, 20)}...`,
-                'apikey': serviceRoleKey?.substring(0, 20) + '...',
-                'Content-Type': 'application/json'
+        let scanInsertSucceeded = false;
+        try {
+            const scanResponse = await fetch(`${supabaseUrl}/rest/v1/qr_scans`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${serviceRoleKey}`,
+                    'apikey': serviceRoleKey,
+                    'Content-Type': 'application/json',
+                    'Prefer': 'return=representation'
+                },
+                body: JSON.stringify(scanPayload)
             });
+
+            console.log('=== SCAN INSERT RESPONSE ===');
+            console.log('Status:', scanResponse.status);
+            console.log('Status Text:', scanResponse.statusText);
             
-            // Try to parse error for better messaging
-            let errorMessage = 'Failed to record scan';
-            let errorDetails: any = {};
-            try {
-                const errorJson = JSON.parse(errorText);
-                errorMessage = errorJson.message || errorJson.error || errorJson.details || errorText;
-                errorDetails = errorJson;
-                console.error('Parsed Error JSON:', JSON.stringify(errorJson, null, 2));
-            } catch (e) {
-                errorMessage = errorText || `HTTP ${scanResponse.status}`;
-                console.error('Could not parse error as JSON:', e);
+            if (!scanResponse.ok) {
+                const errorText = await scanResponse.text();
+                console.error('=== SCAN INSERT FAILED ===');
+                console.error('Status Code:', scanResponse.status);
+                console.error('Status Text:', scanResponse.statusText);
+                console.error('Error Response Body:', errorText);
+                
+                // For production, don't throw - just log and continue with redirect
+                // The user should still be able to access the PDF even if tracking fails
+                console.warn('Scan tracking failed, but continuing with redirect...');
+            } else {
+                const scanResult = await scanResponse.json();
+                console.log('=== SCAN INSERT SUCCESS ===');
+                console.log('Scan Record:', JSON.stringify(scanResult, null, 2));
+                scanInsertSucceeded = true;
             }
-            
-            console.error('Final Error Message:', errorMessage);
-            console.error('Error Details:', JSON.stringify(errorDetails, null, 2));
-            
-            throw new Error(errorMessage);
+        } catch (scanError: any) {
+            console.error('=== SCAN INSERT EXCEPTION ===');
+            console.error('Error:', scanError.message);
+            console.error('Stack:', scanError.stack);
+            // Don't throw - continue with redirect even if tracking fails
+            console.warn('Scan tracking failed with exception, but continuing with redirect...');
         }
-        
-        const scanResult = await scanResponse.json();
-        console.log('=== SCAN INSERT SUCCESS ===');
-        console.log('Scan Record:', JSON.stringify(scanResult, null, 2));
 
         // Update scan counts on qr_codes table
         // First, get the current scan count
@@ -203,137 +219,134 @@ Deno.serve(async (req) => {
             console.log('Scan count updated successfully');
         }
 
-        // Get QR code content for redirect
-        const qrCodeResponse = await fetch(`${supabaseUrl}/rest/v1/qr_codes?id=eq.${qrCodeId}&select=*`, {
-            headers: {
-                'Authorization': `Bearer ${serviceRoleKey}`,
-                'apikey': serviceRoleKey
-            }
-        });
-
-        let redirectUrl = '/';
-        
-        if (qrCodeResponse.ok) {
-            const qrData = await qrCodeResponse.json();
-            console.log('QR code data retrieved, count:', qrData?.length || 0);
+        // Extract redirect URL based on type (use already fetched qrCode)
+        if (qrCode) {
+            const type = qrCode.type;
+            const content = qrCode.content || {};
             
-            if (qrData && qrData.length > 0) {
-                const qrCode = qrData[0];
-                console.log('QR code type:', qrCode.type);
-                console.log('QR code content keys:', Object.keys(qrCode.content || {}));
+            console.log('=== BUILDING REDIRECT URL ===');
+            console.log('Type:', type);
+            console.log('Content:', JSON.stringify(content, null, 2));
+            
+            switch (type) {
+                case 'website':
+                    redirectUrl = content.url || '/';
+                    break;
                 
-                // Extract redirect URL based on type
-                const type = qrCode.type;
-                const content = qrCode.content || {};
+                case 'pdf':
+                    // PDF can be in url, pdfUrl, or embedded in content
+                    redirectUrl = content.url || content.pdfUrl || '/';
+                    console.log('PDF redirect URL:', redirectUrl);
+                    console.log('PDF content:', JSON.stringify(content, null, 2));
+                    
+                    // Validate PDF URL
+                    if (redirectUrl && redirectUrl !== '/' && !redirectUrl.startsWith('http')) {
+                        console.warn('Invalid PDF URL format:', redirectUrl);
+                        redirectUrl = '/';
+                    }
+                    break;
+                    
+                case 'images':
+                    redirectUrl = content.url || content.imageUrl || content.images?.[0]?.url || '/';
+                    break;
                 
-                switch (type) {
-                    case 'website':
-                        redirectUrl = content.url || '/';
-                        break;
-                    
-                    case 'pdf':
-                        redirectUrl = content.url || content.pdfUrl || '/';
-                        break;
-                    
-                    case 'images':
-                        redirectUrl = content.url || content.imageUrl || content.images?.[0]?.url || '/';
-                        break;
-                    
-                    case 'video':
-                        redirectUrl = content.url || content.videoUrl || '/';
-                        break;
-                    
-                    case 'mp3':
-                        redirectUrl = content.url || content.audioUrl || '/';
-                        break;
-                    
-                    case 'menu':
-                        redirectUrl = content.url || content.menuUrl || '/';
-                        break;
-                    
-                    case 'whatsapp':
-                        if (content.phone) {
-                            const phone = (content.phone || '').replace(/[^\d+]/g, '');
-                            const message = content.message ? `?text=${encodeURIComponent(content.message)}` : '';
-                            redirectUrl = `https://wa.me/${phone}${message}`;
+                case 'video':
+                    redirectUrl = content.url || content.videoUrl || '/';
+                    break;
+                
+                case 'mp3':
+                    redirectUrl = content.url || content.audioUrl || '/';
+                    break;
+                
+                case 'menu':
+                    redirectUrl = content.url || content.menuUrl || '/';
+                    break;
+                
+                case 'whatsapp':
+                    if (content.phone) {
+                        const phone = (content.phone || '').replace(/[^\d+]/g, '');
+                        const message = content.message ? `?text=${encodeURIComponent(content.message)}` : '';
+                        redirectUrl = `https://wa.me/${phone}${message}`;
+                    }
+                    break;
+                
+                case 'facebook':
+                    if (content.pageId) {
+                        const fbId = (content.pageId || '').replace(/^https?:\/\/(www\.)?(facebook\.com|fb\.com)\//, '').replace(/\/$/, '');
+                        redirectUrl = `https://facebook.com/${fbId}`;
+                    }
+                    break;
+                
+                case 'instagram':
+                    if (content.username) {
+                        const igUsername = (content.username || '').replace('@', '').replace(/^https?:\/\/(www\.)?instagram\.com\//, '').replace(/\/$/, '');
+                        redirectUrl = `https://instagram.com/${igUsername}`;
+                    }
+                    break;
+                
+                case 'social':
+                    redirectUrl = content.url || content.facebookUrl || content.instagramUrl || content.twitterUrl || '/';
+                    break;
+                
+                case 'links':
+                    redirectUrl = content.links?.[0]?.url || content.url || '/';
+                    break;
+                
+                case 'apps':
+                    const appStore = content.store || 'ios';
+                    const appId = content.appId || '';
+                    if (appId) {
+                        if (appStore === 'ios') {
+                            redirectUrl = `https://apps.apple.com/app/id${appId}`;
+                        } else {
+                            redirectUrl = `https://play.google.com/store/apps/details?id=${appId}`;
                         }
-                        break;
-                    
-                    case 'facebook':
-                        if (content.pageId) {
-                            const fbId = (content.pageId || '').replace(/^https?:\/\/(www\.)?(facebook\.com|fb\.com)\//, '').replace(/\/$/, '');
-                            redirectUrl = `https://facebook.com/${fbId}`;
-                        }
-                        break;
-                    
-                    case 'instagram':
-                        if (content.username) {
-                            const igUsername = (content.username || '').replace('@', '').replace(/^https?:\/\/(www\.)?instagram\.com\//, '').replace(/\/$/, '');
-                            redirectUrl = `https://instagram.com/${igUsername}`;
-                        }
-                        break;
-                    
-                    case 'social':
-                        redirectUrl = content.url || content.facebookUrl || content.instagramUrl || content.twitterUrl || '/';
-                        break;
-                    
-                    case 'links':
-                        redirectUrl = content.links?.[0]?.url || content.url || '/';
-                        break;
-                    
-                    case 'apps':
-                        const appStore = content.store || 'ios';
-                        const appId = content.appId || '';
-                        if (appId) {
-                            if (appStore === 'ios') {
-                                redirectUrl = `https://apps.apple.com/app/id${appId}`;
-                            } else {
-                                redirectUrl = `https://play.google.com/store/apps/details?id=${appId}`;
-                            }
-                        }
-                        break;
-                    
-                    case 'coupon':
-                        redirectUrl = content.url || content.code || content.text || '/';
-                        break;
-                    
-                    case 'vcard':
-                        // For vCard, create a data URI that browsers can handle
-                        const vcardName = `${content.firstName || ''} ${content.lastName || ''}`.trim();
-                        const vcardLines = [
-                            'BEGIN:VCARD',
-                            'VERSION:3.0',
-                            `FN:${vcardName}`,
-                            content.phone ? `TEL:${content.phone}` : '',
-                            content.email ? `EMAIL:${content.email}` : '',
-                            content.company ? `ORG:${content.company}` : '',
-                            content.website ? `URL:${content.website}` : '',
-                            content.address ? `ADR:;;${content.address};;;;` : '',
-                            'END:VCARD'
-                        ].filter(line => line);
-                        const vcardData = vcardLines.join('\\n');
-                        // Use data URI for vCard - browsers will download or open in contacts app
-                        redirectUrl = `data:text/vcard;charset=utf-8,${encodeURIComponent(vcardLines.join('\n'))}`;
-                        break;
-                    
-                    case 'wifi':
-                        // For WiFi, create a data URI
-                        const wifiData = `WIFI:T:${content.encryption || 'WPA'};S:${content.ssid || ''};P:${content.password || ''};;`;
-                        redirectUrl = `data:text/plain;charset=utf-8,${encodeURIComponent(wifiData)}`;
-                        break;
-                    
-                    case 'business':
-                        redirectUrl = content.url || content.website || (content.phone ? `tel:${content.phone}` : '/');
-                        break;
-                    
-                    default:
-                        redirectUrl = content.url || '/';
-                }
+                    }
+                    break;
+                
+                case 'coupon':
+                    redirectUrl = content.url || content.code || content.text || '/';
+                    break;
+                
+                case 'vcard':
+                    // For vCard, create a data URI that browsers can handle
+                    const vcardName = `${content.firstName || ''} ${content.lastName || ''}`.trim();
+                    const vcardLines = [
+                        'BEGIN:VCARD',
+                        'VERSION:3.0',
+                        `FN:${vcardName}`,
+                        content.phone ? `TEL:${content.phone}` : '',
+                        content.email ? `EMAIL:${content.email}` : '',
+                        content.company ? `ORG:${content.company}` : '',
+                        content.website ? `URL:${content.website}` : '',
+                        content.address ? `ADR:;;${content.address};;;;` : '',
+                        'END:VCARD'
+                    ].filter(line => line);
+                    // Use data URI for vCard - browsers will download or open in contacts app
+                    redirectUrl = `data:text/vcard;charset=utf-8,${encodeURIComponent(vcardLines.join('\n'))}`;
+                    break;
+                
+                case 'wifi':
+                    // For WiFi, create a data URI
+                    const wifiData = `WIFI:T:${content.encryption || 'WPA'};S:${content.ssid || ''};P:${content.password || ''};;`;
+                    redirectUrl = `data:text/plain;charset=utf-8,${encodeURIComponent(wifiData)}`;
+                    break;
+                
+                case 'business':
+                    redirectUrl = content.url || content.website || (content.phone ? `tel:${content.phone}` : '/');
+                    break;
+                
+                default:
+                    redirectUrl = content.url || '/';
             }
+            
+            console.log('Final redirect URL for type:', type, '=', redirectUrl);
         } else {
-            console.log('Failed to get QR code data, status:', qrCodeResponse.status);
+            console.warn('QR code not found or could not be retrieved');
+            redirectUrl = '/';
         }
         
+        console.log('=== FINAL REDIRECT URL ===');
         console.log('Redirect URL:', redirectUrl);
 
         // Return HTTP redirect for GET requests (QR code scans)
