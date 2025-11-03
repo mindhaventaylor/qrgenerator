@@ -15,39 +15,89 @@ Deno.serve(async (req) => {
         console.log('=== TRACK-SCAN FUNCTION CALLED ===');
         console.log('Method:', req.method);
         console.log('URL:', req.url);
-        console.log('Headers:', JSON.stringify(Object.fromEntries(req.headers.entries())));
+        
+        try {
+            const headersObj = Object.fromEntries(req.headers.entries());
+            console.log('Headers:', JSON.stringify(headersObj));
+        } catch (e) {
+            console.warn('Could not log headers:', e);
+        }
         
         // Get QR code ID from query parameter or JSON body
-        const url = new URL(req.url);
-        const qrCodeIdParam = url.searchParams.get('id');
+        let qrCodeId: string | null = null;
+        let scanData: any = {};
         
-        let qrCodeId, scanData;
-        if (req.method === 'POST') {
-            const body = await req.json();
-            qrCodeId = body.qrCodeId;
-            scanData = body.scanData;
-        } else {
-            qrCodeId = qrCodeIdParam;
-            scanData = {};
+        try {
+            const url = new URL(req.url);
+            const qrCodeIdParam = url.searchParams.get('id');
+            
+            if (req.method === 'POST') {
+                try {
+                    const body = await req.json();
+                    qrCodeId = body.qrCodeId || body.id;
+                    scanData = body.scanData || {};
+                } catch (e) {
+                    console.error('Failed to parse POST body:', e);
+                    throw new Error('Invalid request body');
+                }
+            } else {
+                qrCodeId = qrCodeIdParam;
+                scanData = {};
+            }
+        } catch (urlError: any) {
+            console.error('Error parsing URL:', urlError);
+            return new Response(
+                JSON.stringify({ error: { message: 'Invalid request URL', details: urlError.message } }),
+                { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+            );
         }
 
         console.log('QR Code ID:', qrCodeId);
 
         if (!qrCodeId) {
-            throw new Error('QR code ID is required');
+            console.error('QR code ID is missing');
+            return new Response(
+                JSON.stringify({ error: { message: 'QR code ID is required' } }),
+                { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+            );
         }
 
-        const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
-        const supabaseUrl = Deno.env.get('SUPABASE_URL');
-
-        if (!serviceRoleKey || !supabaseUrl) {
-            throw new Error('Supabase configuration missing');
-        }
+        // Get environment variables with fallbacks
+        const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || Deno.env.get('SUPABASE_SERVICE_KEY');
+        const supabaseUrl = Deno.env.get('SUPABASE_URL') || Deno.env.get('NEXT_PUBLIC_SUPABASE_URL');
         
         console.log('Environment variables check:', {
             hasServiceKey: !!serviceRoleKey,
-            supabaseUrl: supabaseUrl
+            serviceKeyLength: serviceRoleKey?.length || 0,
+            supabaseUrl: supabaseUrl || 'NOT SET',
+            allEnvKeys: Object.keys(Deno.env.toObject()).filter(k => k.includes('SUPABASE'))
         });
+
+        if (!serviceRoleKey) {
+            console.error('SUPABASE_SERVICE_ROLE_KEY is missing');
+            return new Response(
+                JSON.stringify({ 
+                    error: { 
+                        message: 'Server configuration error. SUPABASE_SERVICE_ROLE_KEY not set.',
+                        code: 'CONFIG_ERROR'
+                    } 
+                }),
+                { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+            );
+        }
+
+        if (!supabaseUrl) {
+            console.error('SUPABASE_URL is missing');
+            return new Response(
+                JSON.stringify({ 
+                    error: { 
+                        message: 'Server configuration error. SUPABASE_URL not set.',
+                        code: 'CONFIG_ERROR'
+                    } 
+                }),
+                { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+            );
+        }
 
         // First, verify the QR code exists
         const verifyQRResponse = await fetch(`${supabaseUrl}/rest/v1/qr_codes?id=eq.${qrCodeId}&select=id,is_active`, {
@@ -349,6 +399,28 @@ Deno.serve(async (req) => {
         console.log('=== FINAL REDIRECT URL ===');
         console.log('Redirect URL:', redirectUrl);
 
+        // Helper function to convert relative URLs to absolute
+        function makeAbsoluteUrl(url: string, baseUrl: string = 'https://generatecodeqr.com'): string {
+            if (!url || url === '/') {
+                return baseUrl;
+            }
+            // If already absolute, return as-is
+            if (url.startsWith('http://') || url.startsWith('https://')) {
+                return url;
+            }
+            // If starts with /, append to base
+            if (url.startsWith('/')) {
+                return `${baseUrl}${url}`;
+            }
+            // Otherwise, treat as relative path
+            return `${baseUrl}/${url}`;
+        }
+
+        // Get origin from request for absolute URL
+        const origin = req.headers.get('origin') || 
+                       req.headers.get('referer')?.split('/').slice(0, 3).join('/') || 
+                       'https://generatecodeqr.com';
+
         // Return HTTP redirect for GET requests (QR code scans)
         if (req.method === 'GET') {
             // For data URIs (vCard, WiFi), return HTML page that handles them
@@ -395,8 +467,10 @@ Deno.serve(async (req) => {
                     }
                 );
             }
-            // For regular URLs, use redirect
-            return Response.redirect(redirectUrl, 302);
+            // For regular URLs, use redirect (must be absolute)
+            const absoluteUrl = makeAbsoluteUrl(redirectUrl, origin);
+            console.log('Converting to absolute URL:', redirectUrl, '->', absoluteUrl);
+            return Response.redirect(absoluteUrl, 302);
         }
 
         // Return JSON for POST requests (API calls)
@@ -411,84 +485,138 @@ Deno.serve(async (req) => {
 
     } catch (error: any) {
         console.error('=== SCAN TRACKING ERROR ===');
-        console.error('Error name:', error.name);
-        console.error('Error message:', error.message);
-        console.error('Error stack:', error.stack);
+        console.error('Error name:', error?.name || 'Unknown');
+        console.error('Error message:', error?.message || String(error));
+        console.error('Error stack:', error?.stack || 'No stack trace');
         console.error('Error type:', typeof error);
-        console.error('Error details:', JSON.stringify(error, Object.getOwnPropertyNames(error)));
+        
+        try {
+            console.error('Error details:', JSON.stringify(error, Object.getOwnPropertyNames(error)));
+        } catch (e) {
+            console.error('Could not stringify error:', e);
+        }
         
         // Log all environment variables status (without values)
-        console.log('Environment check:', {
-            hasServiceRoleKey: !!Deno.env.get('SUPABASE_SERVICE_ROLE_KEY'),
-            hasSupabaseUrl: !!Deno.env.get('SUPABASE_URL'),
-            serviceRoleKeyLength: Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')?.length || 0,
-            supabaseUrl: Deno.env.get('SUPABASE_URL') || 'NOT SET'
-        });
+        try {
+            console.log('Environment check:', {
+                hasServiceRoleKey: !!Deno.env.get('SUPABASE_SERVICE_ROLE_KEY'),
+                hasSupabaseUrl: !!Deno.env.get('SUPABASE_URL'),
+                serviceRoleKeyLength: Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')?.length || 0,
+                supabaseUrl: Deno.env.get('SUPABASE_URL') || 'NOT SET'
+            });
+        } catch (e) {
+            console.error('Could not check environment:', e);
+        }
 
         // For GET requests (QR scans), still try to redirect even if tracking fails
         if (req.method === 'GET') {
             // Try to get QR code and redirect anyway
             try {
-                const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
-                const supabaseUrl = Deno.env.get('SUPABASE_URL');
-                const url = new URL(req.url);
-                const qrCodeId = url.searchParams.get('id');
+                const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || Deno.env.get('SUPABASE_SERVICE_KEY');
+                const supabaseUrl = Deno.env.get('SUPABASE_URL') || Deno.env.get('NEXT_PUBLIC_SUPABASE_URL');
+                
+                let qrCodeId: string | null = null;
+                try {
+                    const url = new URL(req.url);
+                    qrCodeId = url.searchParams.get('id');
+                } catch (e) {
+                    console.error('Could not parse URL for fallback:', e);
+                }
                 
                 console.log('Attempting fallback redirect for QR code:', qrCodeId);
                 
                 if (serviceRoleKey && supabaseUrl && qrCodeId) {
-                    const qrCodeResponse = await fetch(`${supabaseUrl}/rest/v1/qr_codes?id=eq.${qrCodeId}&select=type,content`, {
-                        headers: {
-                            'Authorization': `Bearer ${serviceRoleKey}`,
-                            'apikey': serviceRoleKey
-                        }
-                    });
-                    
-                    if (qrCodeResponse.ok) {
-                        const qrData = await qrCodeResponse.json();
-                        if (qrData && qrData.length > 0) {
-                            const qrCode = qrData[0];
-                            const content = qrCode.content || {};
-                            let redirectUrl = '/';
-                            
-                            // Quick redirect URL extraction
-                            if (content.url) {
-                                redirectUrl = content.url;
-                            } else if (qrCode.type === 'website') {
-                                redirectUrl = content.url || '/';
-                            } else if (qrCode.type === 'pdf') {
-                                redirectUrl = content.url || content.pdfUrl || '/';
-                            } else if (qrCode.type === 'images') {
-                                redirectUrl = content.url || content.imageUrl || '/';
-                            } else if (qrCode.type === 'video') {
-                                redirectUrl = content.url || content.videoUrl || '/';
-                            } else if (qrCode.type === 'mp3') {
-                                redirectUrl = content.url || content.audioUrl || '/';
+                    try {
+                        const qrCodeResponse = await fetch(`${supabaseUrl}/rest/v1/qr_codes?id=eq.${qrCodeId}&select=type,content`, {
+                            headers: {
+                                'Authorization': `Bearer ${serviceRoleKey}`,
+                                'apikey': serviceRoleKey
                             }
-                            
-                            console.log('Fallback redirect URL:', redirectUrl);
-                            
-                            if (redirectUrl !== '/') {
-                                return Response.redirect(redirectUrl, 302);
+                        });
+                        
+                        if (qrCodeResponse.ok) {
+                            const qrData = await qrCodeResponse.json();
+                            if (qrData && qrData.length > 0) {
+                                const qrCode = qrData[0];
+                                const content = qrCode.content || {};
+                                let redirectUrl = '/';
+                                
+                                // Quick redirect URL extraction
+                                if (content.url) {
+                                    redirectUrl = content.url;
+                                } else if (qrCode.type === 'website') {
+                                    redirectUrl = content.url || '/';
+                                } else if (qrCode.type === 'pdf') {
+                                    redirectUrl = content.url || content.pdfUrl || '/';
+                                } else if (qrCode.type === 'images') {
+                                    redirectUrl = content.url || content.imageUrl || '/';
+                                } else if (qrCode.type === 'video') {
+                                    redirectUrl = content.url || content.videoUrl || '/';
+                                } else if (qrCode.type === 'mp3') {
+                                    redirectUrl = content.url || content.audioUrl || '/';
+                                }
+                                
+                                console.log('Fallback redirect URL:', redirectUrl);
+                                
+                                if (redirectUrl && redirectUrl !== '/') {
+                                    // Get origin for absolute URL
+                                    const fallbackOrigin = req.headers.get('origin') || 
+                                                         req.headers.get('referer')?.split('/').slice(0, 3).join('/') || 
+                                                         'https://generatecodeqr.com';
+                                    
+                                    // Make absolute URL
+                                    let absoluteRedirectUrl = redirectUrl;
+                                    if (!absoluteRedirectUrl.startsWith('http://') && !absoluteRedirectUrl.startsWith('https://')) {
+                                        if (absoluteRedirectUrl.startsWith('/')) {
+                                            absoluteRedirectUrl = `${fallbackOrigin}${absoluteRedirectUrl}`;
+                                        } else {
+                                            absoluteRedirectUrl = `${fallbackOrigin}/${absoluteRedirectUrl}`;
+                                        }
+                                    }
+                                    
+                                    console.log('Fallback absolute URL:', absoluteRedirectUrl);
+                                    return Response.redirect(absoluteRedirectUrl, 302);
+                                }
                             }
                         }
+                    } catch (fetchError: any) {
+                        console.error('Fallback fetch error:', fetchError?.message || fetchError);
                     }
                 }
             } catch (redirectError: any) {
-                console.error('Failed to redirect after tracking error:', redirectError);
+                console.error('Failed to redirect after tracking error:', redirectError?.message || redirectError);
             }
             
-            // Final fallback: redirect to home
+            // Final fallback: redirect to home (must be absolute URL)
             console.log('Using final fallback redirect to home');
-            return Response.redirect('/', 302);
+            try {
+                const fallbackOrigin = req.headers.get('origin') || 
+                                     req.headers.get('referer')?.split('/').slice(0, 3).join('/') || 
+                                     'https://generatecodeqr.com';
+                const homeUrl = fallbackOrigin;
+                console.log('Redirecting to home:', homeUrl);
+                return Response.redirect(homeUrl, 302);
+            } catch (redirectErr: any) {
+                console.error('Final fallback redirect failed:', redirectErr);
+                // If even redirect fails, return error
+                return new Response(
+                    JSON.stringify({ 
+                        error: { 
+                            code: 'SCAN_TRACKING_FAILED',
+                            message: error?.message || 'Unknown error occurred'
+                        } 
+                    }),
+                    { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+                );
+            }
         }
 
         // For POST requests, return error JSON
         const errorResponse = {
             error: {
                 code: 'SCAN_TRACKING_FAILED',
-                message: error.message || 'Unknown error occurred',
-                details: error.stack || error.toString()
+                message: error?.message || 'Unknown error occurred',
+                details: error?.stack || String(error)
             }
         };
 
