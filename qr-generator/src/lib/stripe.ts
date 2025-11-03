@@ -252,24 +252,30 @@ export async function createPortalSession(userId: string, stripeCustomerId: stri
         const errorMsg = (data as any)?.error?.message || errorMessage || 'Invalid request. Please check your subscription details.';
         throw new Error(errorMsg);
       } else if (statusCode === 500 || statusCode === 502 || statusCode === 503) {
-        // For 500 errors, try to get more details from the response
-        let detailedMsg = (data as any)?.error?.message || 
-                         (data as any)?.error?.details || 
-                         errorMessage;
+        // For 500 errors, use the already-formatted errorMessage (from data.error check above)
+        // If errorMessage wasn't set from data.error, try to get more details
+        let detailedMsg = errorMessage; // Use already-formatted message
         
-        // Check for specific Stripe errors
-        if (detailedMsg?.includes('No such customer')) {
-          detailedMsg = 'Stripe customer not found. Your subscription may need to be recreated. Please contact support.';
-        } else if (detailedMsg?.includes('customer')) {
-          detailedMsg = 'Invalid Stripe customer. Please contact support.';
-        } else if (detailedMsg?.includes('No configuration provided') || detailedMsg?.includes('billing portal') || detailedMsg?.includes('portal')) {
-          // Specific error for unactivated Billing Portal
-          if (detailedMsg.includes('live mode')) {
-            detailedMsg = 'Stripe Billing Portal is not activated in live mode. Please activate it in your Stripe Dashboard settings.';
-          } else if (detailedMsg.includes('test mode')) {
-            detailedMsg = 'Stripe Billing Portal is not activated in test mode. Please activate it in your Stripe Dashboard settings.';
-          } else {
-            detailedMsg = 'Stripe Billing Portal is not activated. Please activate it in your Stripe Dashboard at Settings → Billing → Customer Portal.';
+        if (detailedMsg === 'Failed to create portal session' || !detailedMsg || detailedMsg === error.message) {
+          // Fallback: try to get details if we don't have a formatted message yet
+          detailedMsg = (data as any)?.error?.message || 
+                       (data as any)?.error?.details || 
+                       errorMessage;
+          
+          // Check for specific Stripe errors
+          if (detailedMsg?.includes('No such customer')) {
+            detailedMsg = 'Stripe customer not found. Your subscription may need to be recreated. Please contact support.';
+          } else if (detailedMsg?.includes('customer')) {
+            detailedMsg = 'Invalid Stripe customer. Please contact support.';
+          } else if (detailedMsg?.includes('No configuration provided') || detailedMsg?.includes('billing portal') || detailedMsg?.includes('portal')) {
+            // Specific error for unactivated Billing Portal
+            if (detailedMsg.includes('live mode')) {
+              detailedMsg = 'Stripe Billing Portal is not activated in live mode. Please activate it at: https://dashboard.stripe.com/settings/billing/portal';
+            } else if (detailedMsg.includes('test mode')) {
+              detailedMsg = 'Stripe Billing Portal is not activated in test mode. Please activate it at: https://dashboard.stripe.com/test/settings/billing/portal';
+            } else {
+              detailedMsg = 'Stripe Billing Portal is not activated. Please activate it in your Stripe Dashboard at Settings → Billing → Customer Portal.';
+            }
           }
         }
         
@@ -279,8 +285,9 @@ export async function createPortalSession(userId: string, stripeCustomerId: stri
       throw new Error(errorMessage || `Failed to create portal session (${statusCode || 'unknown'})`);
     }
 
+    // Check for error in data (this happens when function returns error JSON but status is non-2xx)
     if (data?.error) {
-      console.error('Function returned error:', data.error);
+      console.error('Function returned error in data:', data.error);
       const errorMsg = data.error.message || data.error.details || 'Failed to create portal session';
       const errorCode = data.error.code || 'UNKNOWN_ERROR';
       
@@ -291,6 +298,15 @@ export async function createPortalSession(userId: string, stripeCustomerId: stri
         throw new Error('Invalid subscription account. Please contact support.');
       } else if (errorCode === 'stripe_auth_error') {
         throw new Error('Payment system error. Please contact support.');
+      } else if (errorMsg.includes('No configuration provided') || errorMsg.includes('billing portal') || errorMsg.includes('portal')) {
+        // Specific error for unactivated Billing Portal - this is the most common issue
+        if (errorMsg.includes('live mode')) {
+          throw new Error('Stripe Billing Portal is not activated in live mode. Please activate it at: https://dashboard.stripe.com/settings/billing/portal');
+        } else if (errorMsg.includes('test mode')) {
+          throw new Error('Stripe Billing Portal is not activated in test mode. Please activate it at: https://dashboard.stripe.com/test/settings/billing/portal');
+        } else {
+          throw new Error('Stripe Billing Portal is not activated. Please activate it at: https://dashboard.stripe.com/settings/billing/portal');
+        }
       }
       
       throw new Error(errorMsg);

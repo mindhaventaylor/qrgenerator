@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { createQRCode, uploadFile } from '../lib/qrGenerator';
+import { createQRCode, uploadFile, buildQRData } from '../lib/qrGenerator';
 import { checkSubscriptionStatus } from '../lib/subscriptionCheck';
 import { useSEO } from '../hooks/useSEO';
 import {
@@ -64,6 +64,7 @@ export function CreateQRPage() {
   const [enableTracking, setEnableTracking] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState('');
+  const [previewUrl, setPreviewUrl] = useState('');
   const { user } = useAuth();
   const navigate = useNavigate();
 
@@ -131,6 +132,29 @@ export function CreateQRPage() {
 
     return () => clearInterval(interval);
   }, [user, canCreateQR]);
+
+  // Generate Live Preview QR code when in step 2 and content changes
+  useEffect(() => {
+    if (step === 2 && selectedType && content) {
+      try {
+        // Build QR data without tracking (for preview)
+        const qrData = buildQRData(selectedType, content);
+        
+        // Only generate preview if there's valid data
+        if (qrData && qrData.trim() !== '') {
+          const qrApiUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(qrData)}&format=png`;
+          setPreviewUrl(qrApiUrl);
+        } else {
+          setPreviewUrl('');
+        }
+      } catch (error) {
+        console.error('Error generating preview:', error);
+        setPreviewUrl('');
+      }
+    } else {
+      setPreviewUrl('');
+    }
+  }, [step, selectedType, content]);
 
   async function handleCreateQR() {
     if (!user) {
@@ -892,9 +916,20 @@ export function CreateQRPage() {
                 <div className="relative">
                   <Phone className="w-64 h-auto text-gray-300" />
                   <div className="absolute inset-0 flex items-center justify-center">
-                    <div className="w-32 h-32 bg-gray-100 rounded-lg flex items-center justify-center">
-                      <p className="text-xs text-gray-500 text-center">QR Code<br/>Preview</p>
-                    </div>
+                    {previewUrl ? (
+                      <div className="w-32 h-32 bg-white rounded-lg flex items-center justify-center p-2 shadow-md">
+                        <img 
+                          src={previewUrl} 
+                          alt="QR Code Preview" 
+                          className="w-full h-full object-contain"
+                          onError={() => setPreviewUrl('')}
+                        />
+                      </div>
+                    ) : (
+                      <div className="w-32 h-32 bg-gray-100 rounded-lg flex items-center justify-center">
+                        <p className="text-xs text-gray-500 text-center">Fill in the form<br/>to see preview</p>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>

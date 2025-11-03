@@ -359,21 +359,9 @@ Deno.serve(async (req) => {
                     break;
                 
                 case 'vcard':
-                    // For vCard, create a data URI that browsers can handle
-                    const vcardName = `${content.firstName || ''} ${content.lastName || ''}`.trim();
-                    const vcardLines = [
-                        'BEGIN:VCARD',
-                        'VERSION:3.0',
-                        `FN:${vcardName}`,
-                        content.phone ? `TEL:${content.phone}` : '',
-                        content.email ? `EMAIL:${content.email}` : '',
-                        content.company ? `ORG:${content.company}` : '',
-                        content.website ? `URL:${content.website}` : '',
-                        content.address ? `ADR:;;${content.address};;;;` : '',
-                        'END:VCARD'
-                    ].filter(line => line);
-                    // Use data URI for vCard - browsers will download or open in contacts app
-                    redirectUrl = `data:text/vcard;charset=utf-8,${encodeURIComponent(vcardLines.join('\n'))}`;
+                    // vCard QR codes should show a custom page, not download
+                    // We'll handle this specially in the response section
+                    redirectUrl = 'VCARD_PAGE'; // Special marker
                     break;
                 
                 case 'wifi':
@@ -383,7 +371,9 @@ Deno.serve(async (req) => {
                     break;
                 
                 case 'business':
-                    redirectUrl = content.url || content.website || (content.phone ? `tel:${content.phone}` : '/');
+                    // Business QR codes should show a custom page, not redirect
+                    // We'll handle this specially in the response section
+                    redirectUrl = 'BUSINESS_PAGE'; // Special marker
                     break;
                 
                 default:
@@ -423,7 +413,436 @@ Deno.serve(async (req) => {
 
         // Return HTTP redirect for GET requests (QR code scans)
         if (req.method === 'GET') {
-            // For data URIs (vCard, WiFi), return HTML page that handles them
+            // Handle custom pages for vCard and Business
+            if (redirectUrl === 'VCARD_PAGE' && qrCode) {
+                const vcardContent = qrCode.content || {};
+                const vcardName = `${vcardContent.firstName || ''} ${vcardContent.lastName || ''}`.trim() || 'Contact';
+                
+                return new Response(
+                    `<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>${vcardName} - Contact Card</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .container {
+            background: white;
+            border-radius: 16px;
+            padding: 32px;
+            max-width: 500px;
+            width: 100%;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        .avatar {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 24px;
+            color: white;
+            font-size: 48px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 8px;
+            font-size: 28px;
+        }
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 32px;
+            font-size: 14px;
+        }
+        .info-box {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        .info-row {
+            margin-bottom: 16px;
+            display: flex;
+            align-items: flex-start;
+        }
+        .info-row:last-child {
+            margin-bottom: 0;
+        }
+        .info-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            background: #667eea;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 12px;
+            flex-shrink: 0;
+        }
+        .info-content {
+            flex: 1;
+        }
+        .label {
+            font-size: 12px;
+            color: #666;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 4px;
+        }
+        .value {
+            font-size: 16px;
+            color: #333;
+            font-weight: 500;
+            word-break: break-all;
+        }
+        .value a {
+            color: #667eea;
+            text-decoration: none;
+        }
+        .value a:hover {
+            text-decoration: underline;
+        }
+        .actions {
+            display: flex;
+            gap: 12px;
+            margin-top: 24px;
+        }
+        .action-btn {
+            flex: 1;
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            text-decoration: none;
+            text-align: center;
+            transition: transform 0.2s;
+            border: none;
+        }
+        .action-btn:active {
+            transform: scale(0.95);
+        }
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+        .btn-primary:hover {
+            background: #5568d3;
+        }
+        .btn-secondary {
+            background: #f8f9fa;
+            color: #333;
+            border: 1px solid #e0e0e0;
+        }
+        .btn-secondary:hover {
+            background: #e9ecef;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="avatar">${(vcardContent.firstName?.[0] || '').toUpperCase()}${(vcardContent.lastName?.[0] || '').toUpperCase()}</div>
+        <h1>${vcardName}</h1>
+        <p class="subtitle">Contact Information</p>
+        <div class="info-box">
+            ${vcardContent.phone ? `
+            <div class="info-row">
+                <div class="info-icon">📞</div>
+                <div class="info-content">
+                    <div class="label">Phone</div>
+                    <div class="value"><a href="tel:${vcardContent.phone}">${vcardContent.phone}</a></div>
+                </div>
+            </div>
+            ` : ''}
+            ${vcardContent.email ? `
+            <div class="info-row">
+                <div class="info-icon">✉️</div>
+                <div class="info-content">
+                    <div class="label">Email</div>
+                    <div class="value"><a href="mailto:${vcardContent.email}">${vcardContent.email}</a></div>
+                </div>
+            </div>
+            ` : ''}
+            ${vcardContent.company ? `
+            <div class="info-row">
+                <div class="info-icon">🏢</div>
+                <div class="info-content">
+                    <div class="label">Company</div>
+                    <div class="value">${vcardContent.company}</div>
+                </div>
+            </div>
+            ` : ''}
+            ${vcardContent.website ? `
+            <div class="info-row">
+                <div class="info-icon">🌐</div>
+                <div class="info-content">
+                    <div class="label">Website</div>
+                    <div class="value"><a href="${vcardContent.website}" target="_blank" rel="noopener noreferrer">${vcardContent.website}</a></div>
+                </div>
+            </div>
+            ` : ''}
+            ${vcardContent.address ? `
+            <div class="info-row">
+                <div class="info-icon">📍</div>
+                <div class="info-content">
+                    <div class="label">Address</div>
+                    <div class="value">${vcardContent.address}</div>
+                </div>
+            </div>
+            ` : ''}
+        </div>
+        <div class="actions">
+            <button class="action-btn btn-primary" onclick="downloadVCard()">Save to Contacts</button>
+            <a href="/" class="action-btn btn-secondary">Go Back</a>
+        </div>
+    </div>
+    <script>
+        function downloadVCard() {
+            const vcard = \`BEGIN:VCARD
+VERSION:3.0
+FN:${vcardName}
+${vcardContent.phone ? 'TEL:' + vcardContent.phone : ''}
+${vcardContent.email ? 'EMAIL:' + vcardContent.email : ''}
+${vcardContent.company ? 'ORG:' + vcardContent.company : ''}
+${vcardContent.website ? 'URL:' + vcardContent.website : ''}
+${vcardContent.address ? 'ADR:;;' + vcardContent.address + ';;;;' : ''}
+END:VCARD\`;
+            const blob = new Blob([vcard], { type: 'text/vcard' });
+            const url = window.URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = '${vcardName.replace(/[^a-z0-9]/gi, '_')}.vcf';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            window.URL.revokeObjectURL(url);
+        }
+    </script>
+</body>
+</html>`,
+                    {
+                        headers: { ...corsHeaders, 'Content-Type': 'text/html' },
+                        status: 200
+                    }
+                );
+            }
+            
+            if (redirectUrl === 'BUSINESS_PAGE' && qrCode) {
+                const businessContent = qrCode.content || {};
+                const businessName = businessContent.businessName || 'Business';
+                
+                return new Response(
+                    `<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>${businessName}</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .container {
+            background: white;
+            border-radius: 16px;
+            padding: 32px;
+            max-width: 500px;
+            width: 100%;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        .logo {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 24px;
+            color: white;
+            font-size: 48px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 8px;
+            font-size: 28px;
+        }
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 32px;
+            font-size: 14px;
+        }
+        .info-box {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        .info-row {
+            margin-bottom: 16px;
+            display: flex;
+            align-items: flex-start;
+        }
+        .info-row:last-child {
+            margin-bottom: 0;
+        }
+        .info-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            background: #667eea;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 12px;
+            flex-shrink: 0;
+        }
+        .info-content {
+            flex: 1;
+        }
+        .label {
+            font-size: 12px;
+            color: #666;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 4px;
+        }
+        .value {
+            font-size: 16px;
+            color: #333;
+            font-weight: 500;
+            word-break: break-all;
+        }
+        .value a {
+            color: #667eea;
+            text-decoration: none;
+        }
+        .value a:hover {
+            text-decoration: underline;
+        }
+        .actions {
+            display: flex;
+            gap: 12px;
+            margin-top: 24px;
+        }
+        .action-btn {
+            flex: 1;
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            text-decoration: none;
+            text-align: center;
+            transition: transform 0.2s;
+        }
+        .action-btn:active {
+            transform: scale(0.95);
+        }
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+        .btn-primary:hover {
+            background: #5568d3;
+        }
+        .btn-secondary {
+            background: #f8f9fa;
+            color: #333;
+            border: 1px solid #e0e0e0;
+        }
+        .btn-secondary:hover {
+            background: #e9ecef;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="logo">${businessName.substring(0, 2).toUpperCase()}</div>
+        <h1>${businessName}</h1>
+        <p class="subtitle">Business Information</p>
+        <div class="info-box">
+            ${businessContent.website || businessContent.url ? `
+            <div class="info-row">
+                <div class="info-icon">🌐</div>
+                <div class="info-content">
+                    <div class="label">Website</div>
+                    <div class="value"><a href="${businessContent.website || businessContent.url}" target="_blank" rel="noopener noreferrer">${businessContent.website || businessContent.url}</a></div>
+                </div>
+            </div>
+            ` : ''}
+            ${businessContent.phone ? `
+            <div class="info-row">
+                <div class="info-icon">📞</div>
+                <div class="info-content">
+                    <div class="label">Phone</div>
+                    <div class="value"><a href="tel:${businessContent.phone}">${businessContent.phone}</a></div>
+                </div>
+            </div>
+            ` : ''}
+            ${businessContent.email ? `
+            <div class="info-row">
+                <div class="info-icon">✉️</div>
+                <div class="info-content">
+                    <div class="label">Email</div>
+                    <div class="value"><a href="mailto:${businessContent.email}">${businessContent.email}</a></div>
+                </div>
+            </div>
+            ` : ''}
+            ${businessContent.address ? `
+            <div class="info-row">
+                <div class="info-icon">📍</div>
+                <div class="info-content">
+                    <div class="label">Address</div>
+                    <div class="value">${businessContent.address}</div>
+                </div>
+            </div>
+            ` : ''}
+        </div>
+        <div class="actions">
+            ${businessContent.website || businessContent.url ? `<a href="${businessContent.website || businessContent.url}" target="_blank" rel="noopener noreferrer" class="action-btn btn-primary">Visit Website</a>` : ''}
+            <a href="/" class="action-btn btn-secondary">Go Back</a>
+        </div>
+    </div>
+</body>
+</html>`,
+                    {
+                        headers: { ...corsHeaders, 'Content-Type': 'text/html' },
+                        status: 200
+                    }
+                );
+            }
+            
+            // For data URIs (WiFi), return HTML page that handles them
             if (redirectUrl.startsWith('data:')) {
                 const isVCard = redirectUrl.includes('text/vcard');
                 const isWiFi = redirectUrl.includes('text/plain');
