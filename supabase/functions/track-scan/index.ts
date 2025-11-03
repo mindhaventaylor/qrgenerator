@@ -429,3 +429,273 @@ Deno.serve(async (req) => {
             }
             
             // OLD HTML CODE REMOVED - now redirecting to frontend pages
+            
+            // For data URIs (WiFi), return HTML page that handles them
+            if (redirectUrl.startsWith('data:')) {
+                const isWiFi = redirectUrl.includes('text/plain');
+                
+                return new Response(
+                    `<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WiFi Connection</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .container {
+            background: white;
+            border-radius: 16px;
+            padding: 32px;
+            max-width: 400px;
+            width: 100%;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        .wifi-icon {
+            width: 64px;
+            height: 64px;
+            margin: 0 auto 24px;
+            display: block;
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 8px;
+            font-size: 24px;
+        }
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 32px;
+            font-size: 14px;
+        }
+        .info-box {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        .info-row {
+            margin-bottom: 16px;
+        }
+        .info-row:last-child {
+            margin-bottom: 0;
+        }
+        .label {
+            font-size: 12px;
+            color: #666;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 4px;
+        }
+        .value {
+            font-size: 18px;
+            color: #333;
+            font-weight: 600;
+            word-break: break-all;
+        }
+        .password-value {
+            font-family: monospace;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .copy-btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            cursor: pointer;
+            margin-left: 8px;
+        }
+        .copy-btn:hover {
+            background: #5568d3;
+        }
+        .copy-btn:active {
+            transform: scale(0.95);
+        }
+        .note {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 12px;
+            border-radius: 6px;
+            font-size: 13px;
+            color: #856404;
+            margin-top: 20px;
+        }
+        .back-btn {
+            display: block;
+            width: 100%;
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 14px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 20px;
+            text-decoration: none;
+            text-align: center;
+        }
+        .back-btn:hover {
+            background: #5568d3;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <svg class="wifi-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M5 12.55a11 11 0 0 1 14.08 0"></path>
+            <path d="M1.42 9a16 16 0 0 1 21.16 0"></path>
+            <path d="M8.53 16.11a6 6 0 0 1 6.95 0"></path>
+            <line x1="12" y1="20" x2="12.01" y2="20"></line>
+        </svg>
+        <h1>WiFi Network</h1>
+        <p class="subtitle">Connection Details</p>
+        <div class="info-box" id="wifiInfo">
+            <p style="text-align: center; color: #666;">Loading WiFi information...</p>
+        </div>
+        <div class="note">
+            <strong>Note:</strong> Please connect to this network manually using the details above. Your device should prompt you to connect.
+        </div>
+        <a href="/" class="back-btn">Go Back</a>
+    </div>
+    <script>
+        const dataUri = ${JSON.stringify(redirectUrl)};
+        
+        // For WiFi, display info nicely
+        if (${isWiFi}) {
+            try {
+                // Extract WiFi info from data URI
+                const wifiData = decodeURIComponent(dataUri.split(',')[1]);
+                const wifiMatch = wifiData.match(/WIFI:T:([^;]+);S:([^;]+);P:([^;]+)/);
+                
+                if (wifiMatch) {
+                    const encryption = wifiMatch[1] || 'WPA';
+                    const ssid = wifiMatch[2] || '';
+                    const password = wifiMatch[3] || '';
+                    
+                    // Display WiFi info
+                    const infoBox = document.getElementById('wifiInfo');
+                    infoBox.innerHTML = \`
+                        <div class="info-row">
+                            <div class="label">Network Name (SSID)</div>
+                            <div class="value" id="ssidValue">\${ssid}</div>
+                        </div>
+                        <div class="info-row">
+                            <div class="label">Password</div>
+                            <div class="value password-value">
+                                <span id="passwordValue">\${password}</span>
+                                <button class="copy-btn" onclick="copyPassword()">Copy</button>
+                            </div>
+                        </div>
+                        <div class="info-row">
+                            <div class="label">Security Type</div>
+                            <div class="value">\${encryption}</div>
+                        </div>
+                    \`;
+                    
+                    // Copy password function
+                    window.copyPassword = function() {
+                        navigator.clipboard.writeText('\${password.replace(/'/g, "\\\\'")}').then(() => {
+                            const btn = event.target;
+                            btn.textContent = 'Copied!';
+                            setTimeout(() => {
+                                btn.textContent = 'Copy';
+                            }, 2000);
+                        }).catch(() => {
+                            // Fallback for older browsers
+                            const textarea = document.createElement('textarea');
+                            textarea.value = '\${password.replace(/'/g, "\\\\'")}';
+                            document.body.appendChild(textarea);
+                            textarea.select();
+                            document.execCommand('copy');
+                            document.body.removeChild(textarea);
+                            const btn = event.target;
+                            btn.textContent = 'Copied!';
+                            setTimeout(() => {
+                                btn.textContent = 'Copy';
+                            }, 2000);
+                        });
+                    };
+                    
+                    // Try to trigger WiFi connection on mobile devices
+                    setTimeout(() => {
+                        if (/iPhone|iPad|iPod/i.test(navigator.userAgent)) {
+                            // iOS - show instructions
+                            console.log('iOS detected - manual connection required');
+                        } else if (/Android/i.test(navigator.userAgent)) {
+                            // Try Android WiFi intent (may not work due to security)
+                            try {
+                                window.location.href = 'android-app://settings.wifi';
+                            } catch (e) {
+                                console.log('Could not open WiFi settings');
+                            }
+                        }
+                    }, 500);
+                } else {
+                    document.getElementById('wifiInfo').innerHTML = '<p style="text-align: center; color: #d32f2f;">Could not parse WiFi information.</p>';
+                }
+            } catch (error) {
+                document.getElementById('wifiInfo').innerHTML = '<p style="text-align: center; color: #d32f2f;">Error loading WiFi information.</p>';
+                console.error('WiFi parse error:', error);
+            }
+        }
+    </script>
+</body>
+</html>`,
+                    {
+                        headers: { ...corsHeaders, 'Content-Type': 'text/html' },
+                        status: 200
+                    }
+                );
+            }
+            
+            // For regular URLs, redirect to the absolute URL
+            const absoluteRedirectUrl = makeAbsoluteUrl(redirectUrl, origin);
+            console.log('Redirecting to:', absoluteRedirectUrl);
+            return Response.redirect(absoluteRedirectUrl, 302);
+        }
+        
+        // For POST requests, return JSON response
+        return new Response(
+            JSON.stringify({ 
+                success: true, 
+                scanRecorded: scanInsertSucceeded,
+                message: 'Scan tracked successfully'
+            }),
+            { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+    } catch (error: any) {
+        console.error('=== TRACK-SCAN FUNCTION ERROR ===');
+        console.error('Error name:', error.name);
+        console.error('Error message:', error.message);
+        console.error('Error stack:', error.stack);
+        console.error('Full error:', JSON.stringify(error, Object.getOwnPropertyNames(error), 2));
+        
+        const errorResponse = {
+            error: {
+                message: error.message || 'An unexpected error occurred',
+                code: error.code || 'UNKNOWN_ERROR',
+                details: error.stack || ''
+            }
+        };
+        
+        return new Response(JSON.stringify(errorResponse), {
+            status: 500,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+    }
+});
