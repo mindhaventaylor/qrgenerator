@@ -81,8 +81,8 @@ export function BillingPage() {
         if (window.gtag) {
           // Fire Google Ads conversion event for Purchase
           window.gtag('event', 'conversion', {
-            'send_to': 'AW-17694438085/TJjKCIaoj7gbEMXlrvVB',
-            'value': 5.00,
+            'send_to': 'AW-17675352374/sH8pCJqBsLkbELbyoexB',
+            'value': 1.0,
             'currency': 'USD',
             'transaction_id': sessionId
           });
@@ -92,8 +92,8 @@ export function BillingPage() {
           localStorage.setItem('google_ads_conversion_tracked', sessionId);
           
           console.log('Google Ads conversion tracked:', {
-            send_to: 'AW-17694438085/TJjKCIaoj7gbEMXlrvVB',
-            value: 5.00,
+            send_to: 'AW-17675352374/sH8pCJqBsLkbELbyoexB',
+            value: 1.0,
             currency: 'USD',
             transaction_id: sessionId
           });
@@ -112,8 +112,8 @@ export function BillingPage() {
           function fireConversion() {
             if (typeof gtag !== 'undefined') {
               gtag('event', 'conversion', {
-                'send_to': 'AW-17694438085/TJjKCIaoj7gbEMXlrvVB',
-                'value': 5.00,
+                'send_to': 'AW-17675352374/sH8pCJqBsLkbELbyoexB',
+                'value': 1.0,
                 'currency': 'USD',
                 'transaction_id': '${sessionId}'
               });
@@ -121,8 +121,8 @@ export function BillingPage() {
               // Fallback: push to dataLayer if gtag not available yet
               window.dataLayer.push({
                 'event': 'conversion',
-                'send_to': 'AW-17694438085/TJjKCIaoj7gbEMXlrvVB',
-                'value': 5.00,
+                'send_to': 'AW-17675352374/sH8pCJqBsLkbELbyoexB',
+                'value': 1.0,
                 'currency': 'USD',
                 'transaction_id': '${sessionId}'
               });
