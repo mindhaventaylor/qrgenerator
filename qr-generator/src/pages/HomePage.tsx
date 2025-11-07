@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { QrCode, Palette, BarChart3, Settings, Shield, Zap, Menu, X } from 'lucide-react';
+import { QrCode, Palette, BarChart3, Settings, Shield, Menu, X } from 'lucide-react';
 import { useSEO } from '../hooks/useSEO';
 
 export function HomePage() {
@@ -12,25 +12,6 @@ export function HomePage() {
   });
   
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const qrTypes = [
-    { name: 'Website', icon: '🌐', description: 'Link to any website URL' },
-    { name: 'PDF', icon: '📄', description: 'Show a PDF' },
-    { name: 'Images', icon: '🖼️', description: 'Share multiple images' },
-    { name: 'Video', icon: '🎥', description: 'Show a video' },
-    { name: 'WiFi', icon: '📶', description: 'Connect to a Wi-Fi network' },
-    { name: 'Menu', icon: '🍽️', description: 'Create a restaurant menu' },
-    { name: 'Business', icon: '💼', description: 'Share business information' },
-    { name: 'vCard', icon: '👤', description: 'Share a digital business card' },
-    { name: 'MP3', icon: '🎵', description: 'Share an audio file' },
-    { name: 'Apps', icon: '📱', description: 'Redirect to an app store' },
-    { name: 'List of Links', icon: '🔗', description: 'Share multiple links' },
-    { name: 'Coupon', icon: '🎫', description: 'Share a coupon' },
-    { name: 'Facebook', icon: '👥', description: 'Share your Facebook page' },
-    { name: 'Instagram', icon: '📷', description: 'Share your Instagram' },
-    { name: 'Social Media', icon: '🌟', description: 'Share your social channels' },
-    { name: 'WhatsApp', icon: '💬', description: 'Get WhatsApp messages' }
-  ];
-
   const features = [
     {
       icon: <Palette className="w-8 h-8" />,
@@ -133,22 +114,6 @@ export function HomePage() {
           Start generating QR codes - $5/month
         </Link>
         <p className="text-gray-400 text-sm md:text-base">Simple, honest pricing. Cancel anytime.</p>
-      </section>
-
-      {/* QR Code Types */}
-      <section className="container mx-auto px-4 md:px-6 py-12 md:py-16">
-        <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold text-center mb-8 md:mb-12 px-4">Create QR Codes With Our Step-by-Step System</h2>
-        <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-8 gap-2 md:gap-4 mb-12 md:mb-16">
-          {qrTypes.map((type, index) => (
-            <div
-              key={index}
-              className="bg-white/10 backdrop-blur-sm rounded-lg p-2 md:p-4 text-center hover:bg-white/20 transition cursor-pointer"
-            >
-              <div className="text-2xl md:text-4xl mb-1 md:mb-2">{type.icon}</div>
-              <div className="text-xs md:text-sm font-semibold break-words">{type.name}</div>
-            </div>
-          ))}
-        </div>
       </section>
 
       {/* Why We're Different Section */}
