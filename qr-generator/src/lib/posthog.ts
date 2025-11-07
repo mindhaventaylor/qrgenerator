@@ -1,7 +1,7 @@
 import posthog from 'posthog-js'
 
-const POSTHOG_KEY = import.meta.env.VITE_PUBLIC_POSTHOG_KEY
-const POSTHOG_HOST = import.meta.env.VITE_PUBLIC_POSTHOG_HOST || 'https://us.i.posthog.com'
+const POSTHOG_KEY = import.meta.env.VITE_POSTHOG_KEY || import.meta.env.VITE_PUBLIC_POSTHOG_KEY
+const POSTHOG_HOST = import.meta.env.VITE_POSTHOG_HOST || import.meta.env.VITE_PUBLIC_POSTHOG_HOST || 'https://us.i.posthog.com'
 const POSTHOG_ENABLED = typeof window !== 'undefined' && Boolean(POSTHOG_KEY)
 
 if (POSTHOG_ENABLED) {
@@ -16,8 +16,9 @@ if (POSTHOG_ENABLED) {
       posthog.capture('app_loaded', { source: 'qr-generator' })
     },
   })
+  console.info('[PostHog] Initialized with host', POSTHOG_HOST)
 } else {
-  console.warn('PostHog is not enabled. Missing VITE_PUBLIC_POSTHOG_KEY or running outside browser.')
+  console.warn('[PostHog] Client not enabled. Missing VITE_POSTHOG_KEY/VITE_PUBLIC_POSTHOG_KEY or running outside browser.')
 }
 
 export { posthog, POSTHOG_ENABLED }
