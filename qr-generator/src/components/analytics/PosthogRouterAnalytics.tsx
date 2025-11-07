@@ -1,20 +1,19 @@
 import { useEffect } from 'react'
 import { useLocation } from 'react-router-dom'
 
-import { POSTHOG_ENABLED, posthog } from '../../lib/posthog'
+import { usePostHog } from 'posthog-js/react'
 
 export function PosthogRouterAnalytics() {
   const location = useLocation()
+  const posthog = usePostHog()
 
   useEffect(() => {
-    if (!POSTHOG_ENABLED) return
+    if (!posthog) return
 
     posthog.capture('$pageview', {
       $current_url: window.location.href,
     })
-  }, [location])
+  }, [location, posthog])
 
   return null
 }
-
-
