@@ -21,11 +21,13 @@ import { TermsPage } from './pages/TermsPage';
 import { VCardPage } from './pages/VCardPage';
 import { BusinessPage } from './pages/BusinessPage';
 import { LinksPage } from './pages/LinksPage';
+import { PosthogRouterAnalytics } from './components/analytics/PosthogRouterAnalytics';
 
 function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
+        <PosthogRouterAnalytics />
         <Routes>
           {/* Public routes */}
           <Route path="/" element={<HomePage />} />
