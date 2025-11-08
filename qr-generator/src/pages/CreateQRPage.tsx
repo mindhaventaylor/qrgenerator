@@ -65,6 +65,7 @@ export function CreateQRPage() {
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState('');
   const [previewUrl, setPreviewUrl] = useState('');
+  const [showPaywall, setShowPaywall] = useState(false);
   const { user } = useAuth();
   const navigate = useNavigate();
 
@@ -133,6 +134,13 @@ export function CreateQRPage() {
     return () => clearInterval(interval);
   }, [user, canCreateQR]);
 
+  useEffect(() => {
+  if (canCreateQR && showPaywall) {
+      setShowPaywall(false);
+      setStep(2);
+    }
+  }, [canCreateQR, showPaywall]);
+
   // Generate Live Preview QR code when in step 2 and content changes
   useEffect(() => {
     if (step === 2 && selectedType && content) {
@@ -164,7 +172,9 @@ export function CreateQRPage() {
 
     // Check subscription status before creating
     if (!canCreateQR) {
-      setError('You need an active subscription to create QR codes. Please subscribe to continue.');
+      setError('');
+      setShowPaywall(true);
+      setStep(3);
       return;
     }
 
@@ -258,7 +268,7 @@ export function CreateQRPage() {
     }
   }
 
-  function renderStepContent() {
+  const renderStepContent = () => {
     if (step === 1) {
       return (
         <div>
@@ -920,7 +930,63 @@ export function CreateQRPage() {
         </div>
       );
     }
-  }
+
+    if (step === 3) {
+      return (
+        <div className="space-y-6">
+          <div className="text-center space-y-3">
+            <h2 className="text-3xl font-bold text-gray-900">Activate your subscription</h2>
+            <p className="text-gray-600 text-pretty max-w-2xl mx-auto">
+              Everything you just set up is saved locally. Subscribe for $5/month to publish the QR code, unlock analytics,
+              and keep unlimited edits. Honest pricing — no hidden fees, no annual traps.
+            </p>
+          </div>
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="bg-purple-50 border border-purple-200 rounded-2xl p-5 text-left">
+              <h3 className="text-lg font-semibold text-purple-900 mb-2">What you’re getting</h3>
+              <ul className="space-y-2 text-sm text-purple-900/80">
+                <li>• Unlimited dynamic QR codes with editable destinations</li>
+                <li>• Live analytics, scan history, and automation triggers</li>
+                <li>• Branded landing pages for vCards, menus, and link hubs</li>
+              </ul>
+            </div>
+            <div className="bg-white border border-gray-200 rounded-2xl p-5 text-left">
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">Simple, transparent billing</h3>
+              <ul className="space-y-2 text-sm text-gray-600">
+                <li>• $5/month flat — cancel anytime</li>
+                <li>• No per-scan charges or hidden upgrades</li>
+                <li>• Re-activate later and pick up where you left off</li>
+              </ul>
+            </div>
+          </div>
+          {subscriptionMessage && (
+            <div className="bg-purple-100 border border-purple-200 rounded-2xl p-4 text-sm text-purple-800">
+              {subscriptionMessage}
+            </div>
+          )}
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <button
+              onClick={() => {
+                setShowPaywall(false);
+                setStep(2);
+              }}
+              className="flex items-center justify-center gap-2 px-6 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition"
+            >
+              <ArrowLeft className="w-5 h-5" />
+              Return to edit
+            </button>
+            <Link
+              to="/billing"
+              className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-purple-600 hover:bg-purple-700 text-white font-semibold rounded-lg transition shadow"
+            >
+              Subscribe for $5/month
+              <ArrowRight className="w-5 h-5" />
+            </Link>
+          </div>
+        </div>
+      );
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50 via-white to-purple-50">
@@ -957,10 +1023,19 @@ export function CreateQRPage() {
               </div>
               <span className="font-medium hidden md:inline">Content</span>
             </div>
+            <div className="w-12 border-t-2 border-gray-300"></div>
+            <div className={`flex items-center space-x-2 ${step >= 3 ? 'text-purple-600' : 'text-gray-400'}`}>
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                step >= 3 ? 'bg-purple-600 text-white' : 'bg-gray-200'
+              }`}>
+                3
+              </div>
+              <span className="font-medium hidden md:inline">Activate subscription</span>
+            </div>
           </div>
 
           {/* Subscription Required Banner */}
-          {subscriptionChecked && !canCreateQR && (
+          {subscriptionChecked && showPaywall && (
             <div className="bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-2xl shadow-xl p-5 sm:p-6 mb-6 sm:mb-8">
               <div className="flex flex-col gap-4 sm:gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div className="space-y-2">
@@ -985,22 +1060,6 @@ export function CreateQRPage() {
               <div className="text-center py-8">
                 <p className="text-gray-600">Checking subscription status...</p>
               </div>
-            ) : !canCreateQR ? (
-              <div className="text-center py-12">
-                <div className="max-w-md mx-auto">
-                  <h3 className="text-2xl font-bold text-gray-900 mb-4 text-balance">Subscribe to Create QR Codes</h3>
-                  <p className="text-gray-600 mb-6 text-pretty">
-                    We believe in honest, transparent pricing. Only $5/month - no hidden fees, no scams, 
-                    no credit card surprises. What you see is what you pay.
-                  </p>
-                  <Link
-                    to="/billing"
-                    className="inline-block bg-purple-600 hover:bg-purple-700 text-white font-semibold px-6 sm:px-8 py-3 rounded-xl transition shadow"
-                  >
-                    Subscribe Now - $5/month
-                  </Link>
-                </div>
-              </div>
             ) : (
               renderStepContent()
             )}
@@ -1014,20 +1073,32 @@ export function CreateQRPage() {
                 <div className="relative">
                   <Phone className="w-64 h-auto text-gray-300" />
                   <div className="absolute inset-0 flex items-center justify-center">
-                    {previewUrl ? (
-                      <div className="w-32 h-32 bg-white rounded-lg flex items-center justify-center p-2 shadow-md">
-                        <img 
-                          src={previewUrl} 
-                          alt="QR Code Preview" 
-                          className="w-full h-full object-contain"
-                          onError={() => setPreviewUrl('')}
-                        />
-                      </div>
-                    ) : (
-                      <div className="w-32 h-32 bg-gray-100 rounded-lg flex items-center justify-center">
-                        <p className="text-xs text-gray-500 text-center">Fill in the form<br/>to see preview</p>
-                      </div>
-                    )}
+                    <div className="w-32 h-32 bg-white rounded-lg flex items-center justify-center p-2 shadow-md overflow-hidden">
+                      {!previewUrl ? (
+                        <div className="w-full h-full bg-gray-100 rounded-lg flex items-center justify-center">
+                          <p className="text-xs text-gray-500 text-center">Fill in the form<br />to see preview</p>
+                        </div>
+                      ) : (
+                        <div className="relative w-full h-full">
+                          <img
+                            src={previewUrl}
+                            alt="QR Code Preview"
+                            className={`w-full h-full object-contain transition ${canCreateQR ? '' : 'blur-sm opacity-80'}`}
+                            onError={() => setPreviewUrl('')}
+                          />
+                          {!canCreateQR && (
+                            <div className="absolute inset-0 flex flex-col items-center justify-center gap-1 bg-white/70 text-center px-2">
+                              <span className="text-[10px] font-semibold text-gray-700 uppercase tracking-wide">
+                                Subscribe to unlock preview
+                              </span>
+                              <span className="text-[9px] text-gray-500">
+                                Ready to go once you upgrade
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>
