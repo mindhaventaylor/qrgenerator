@@ -63,3 +63,4 @@ npx supabase secrets set SUPABASE_SERVICE_ROLE_KEY=<paste_your_key_here>
 
 
 
+
