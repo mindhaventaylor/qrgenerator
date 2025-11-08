@@ -87,6 +87,11 @@ export function BillingPage() {
             'transaction_id': sessionId
           });
           
+          // Fire WhatsApp conversion event
+          window.gtag('event', 'conversion', {
+            'send_to': 'AW-725659273/xzFKCL3ym60ZEIndgtoC'
+          });
+          
           // Mark this session as tracked
           conversionTrackedRef.current = sessionId;
           localStorage.setItem('google_ads_conversion_tracked', sessionId);
@@ -96,6 +101,9 @@ export function BillingPage() {
             value: 1.0,
             currency: 'USD',
             transaction_id: sessionId
+          });
+          console.log('WhatsApp conversion tracked:', {
+            send_to: 'AW-725659273/xzFKCL3ym60ZEIndgtoC'
           });
         } else {
           // Retry after a short delay if gtag isn't loaded yet
@@ -117,6 +125,9 @@ export function BillingPage() {
                 'currency': 'USD',
                 'transaction_id': '${sessionId}'
               });
+              gtag('event', 'conversion', {
+                'send_to': 'AW-725659273/xzFKCL3ym60ZEIndgtoC'
+              });
             } else if (window.dataLayer) {
               // Fallback: push to dataLayer if gtag not available yet
               window.dataLayer.push({
@@ -125,6 +136,10 @@ export function BillingPage() {
                 'value': 1.0,
                 'currency': 'USD',
                 'transaction_id': '${sessionId}'
+              });
+              window.dataLayer.push({
+                'event': 'conversion',
+                'send_to': 'AW-725659273/xzFKCL3ym60ZEIndgtoC'
               });
             } else {
               // Retry if neither is available
