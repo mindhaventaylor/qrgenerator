@@ -923,23 +923,23 @@ export function CreateQRPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="container mx-auto px-6 py-12">
+    <div className="min-h-screen bg-gradient-to-b from-gray-50 via-white to-purple-50">
+      <div className="container mx-auto px-4 sm:px-6 py-8 sm:py-12">
         <div className="max-w-5xl mx-auto">
           {/* Header */}
-          <div className="mb-8">
+          <div className="mb-8 sm:mb-10">
             <button
               onClick={() => navigate('/dashboard')}
-              className="flex items-center space-x-2 text-gray-600 hover:text-gray-900 mb-4"
+              className="flex items-center space-x-2 text-gray-600 hover:text-gray-900 mb-4 text-sm sm:text-base"
             >
               <ArrowLeft className="w-5 h-5" />
               <span>Back to Dashboard</span>
             </button>
-            <h1 className="text-3xl font-bold text-gray-800">Create QR Code</h1>
+            <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 text-balance">Create QR Code</h1>
           </div>
 
           {/* Progress Steps */}
-          <div className="flex items-center justify-center mb-8 space-x-4">
+          <div className="flex items-center justify-center mb-8 sm:mb-10 space-x-4">
             <div className={`flex items-center space-x-2 ${step >= 1 ? 'text-purple-600' : 'text-gray-400'}`}>
               <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
                 step >= 1 ? 'bg-purple-600 text-white' : 'bg-gray-200'
@@ -961,17 +961,17 @@ export function CreateQRPage() {
 
           {/* Subscription Required Banner */}
           {subscriptionChecked && !canCreateQR && (
-            <div className="bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-xl shadow-lg p-6 mb-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="text-xl font-bold mb-2">Subscription Required</h3>
-                  <p className="text-purple-100">
+            <div className="bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-2xl shadow-xl p-5 sm:p-6 mb-6 sm:mb-8">
+              <div className="flex flex-col gap-4 sm:gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div className="space-y-2">
+                  <h3 className="text-lg sm:text-xl font-bold">Subscription Required</h3>
+                  <p className="text-purple-100 text-sm sm:text-base">
                     {subscriptionMessage || 'Please subscribe to create QR codes. Only $5/month - honest pricing, no hidden fees, no scams.'}
                   </p>
                 </div>
                 <Link
                   to="/billing"
-                  className="bg-white text-purple-600 hover:bg-purple-50 font-semibold px-6 py-3 rounded-lg transition whitespace-nowrap"
+                  className="bg-white text-purple-600 hover:bg-purple-50 font-semibold px-5 py-3 rounded-xl transition text-center shadow"
                 >
                   Subscribe Now - $5/month
                 </Link>
@@ -980,7 +980,7 @@ export function CreateQRPage() {
           )}
 
           {/* Content */}
-          <div className="bg-white rounded-xl shadow-lg p-8">
+          <div className="bg-white rounded-2xl shadow-lg border border-purple-100/60 p-6 sm:p-8">
             {!subscriptionChecked ? (
               <div className="text-center py-8">
                 <p className="text-gray-600">Checking subscription status...</p>
@@ -988,14 +988,14 @@ export function CreateQRPage() {
             ) : !canCreateQR ? (
               <div className="text-center py-12">
                 <div className="max-w-md mx-auto">
-                  <h3 className="text-2xl font-bold text-gray-800 mb-4">Subscribe to Create QR Codes</h3>
-                  <p className="text-gray-600 mb-6">
+                  <h3 className="text-2xl font-bold text-gray-900 mb-4 text-balance">Subscribe to Create QR Codes</h3>
+                  <p className="text-gray-600 mb-6 text-pretty">
                     We believe in honest, transparent pricing. Only $5/month - no hidden fees, no scams, 
                     no credit card surprises. What you see is what you pay.
                   </p>
                   <Link
                     to="/billing"
-                    className="inline-block bg-purple-600 hover:bg-purple-700 text-white font-semibold px-8 py-3 rounded-lg transition"
+                    className="inline-block bg-purple-600 hover:bg-purple-700 text-white font-semibold px-6 sm:px-8 py-3 rounded-xl transition shadow"
                   >
                     Subscribe Now - $5/month
                   </Link>
@@ -1008,8 +1008,8 @@ export function CreateQRPage() {
 
           {/* Mobile Preview */}
           {step === 2 && (
-            <div className="mt-8 bg-white rounded-xl shadow-lg p-6">
-              <h3 className="text-lg font-semibold text-gray-800 mb-4">Live Preview</h3>
+            <div className="mt-8 bg-white rounded-2xl shadow-lg border border-purple-100/60 p-6 sm:p-8">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Live Preview</h3>
               <div className="flex justify-center">
                 <div className="relative">
                   <Phone className="w-64 h-auto text-gray-300" />

@@ -230,14 +230,19 @@ export function BillingPage() {
 
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="container mx-auto px-4 md:px-6 py-8 md:py-12">
-        <div className="max-w-6xl mx-auto">
-          <Link to="/dashboard" className="text-purple-600 hover:text-purple-700 mb-4 inline-block">
+    <div className="min-h-screen bg-gradient-to-b from-gray-50 via-white to-purple-50">
+      <div className="container mx-auto px-4 sm:px-6 py-8 sm:py-12">
+        <div className="max-w-5xl mx-auto">
+          <Link
+            to="/dashboard"
+            className="text-purple-600 hover:text-purple-700 mb-6 inline-flex items-center text-sm font-medium tracking-wide"
+          >
             ← Back to Dashboard
           </Link>
-          <h1 className="text-3xl font-bold text-gray-800 mb-4">Subscription & Billing</h1>
-          <p className="text-gray-600 mb-8 text-lg">
+          <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-3 sm:mb-4 text-balance">
+            Subscription & Billing
+          </h1>
+          <p className="text-gray-600 text-base sm:text-lg mb-8 sm:mb-10 max-w-3xl text-pretty">
             Simple, transparent pricing at $5/month. Cancel anytime.
           </p>
 
@@ -270,14 +275,14 @@ export function BillingPage() {
 
 
           {/* Pricing Info */}
-          <div className="bg-purple-50 border border-purple-200 rounded-xl p-6 mb-8">
-            <div className="flex items-center space-x-4">
-              <div className="bg-purple-600 text-white rounded-full p-3">
-                <Check className="w-6 h-6" />
+          <div className="bg-white/80 backdrop-blur-sm border border-purple-100 rounded-2xl p-6 sm:p-8 shadow-lg mb-10">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-5 space-y-4 sm:space-y-0">
+              <div className="bg-purple-600/90 text-white rounded-full p-3 sm:p-4 w-fit">
+                <Check className="w-5 h-5 sm:w-6 sm:h-6" />
               </div>
-              <div>
-                <h3 className="text-lg font-bold text-purple-900 mb-1">What's Included</h3>
-                <p className="text-purple-700">
+              <div className="space-y-1">
+                <h3 className="text-lg sm:text-xl font-semibold text-purple-900">What's Included</h3>
+                <p className="text-purple-700 text-sm sm:text-base leading-relaxed">
                   Unlimited QR codes, all types, advanced analytics, and custom branding. 
                   All for a simple $5/month subscription.
                 </p>
@@ -285,40 +290,42 @@ export function BillingPage() {
             </div>
           </div>
 
-          <div className="grid md:grid-cols-1 max-w-2xl mx-auto gap-6">
+          <div className="space-y-6">
             {PLANS.map((plan) => (
               <div
                 key={plan.id}
-                className={`bg-white rounded-xl shadow-lg overflow-hidden ${
+                className={`bg-white rounded-2xl shadow-xl overflow-hidden border border-purple-100/60 ${
                   plan.popular ? 'ring-2 ring-purple-600' : ''
                 }`}
               >
                 {plan.popular && (
-                  <div className="bg-purple-600 text-white text-center py-2 text-sm font-semibold">
+                  <div className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white text-center py-2 text-xs sm:text-sm font-semibold tracking-wide uppercase">
                     Monthly Plan
                   </div>
                 )}
-                <div className="p-8">
-                  <h3 className="text-2xl font-bold text-gray-800 mb-2">{plan.name}</h3>
-                  <div className="mb-4">
-                    <span className="text-5xl font-bold text-gray-800">${plan.price}</span>
-                    <span className="text-gray-600 text-xl">/{plan.period}</span>
-                  </div>
-                  <p className="text-lg text-gray-700 mb-2 font-medium">{plan.billing}</p>
-                  <p className="text-sm text-gray-600 mb-4">{plan.description}</p>
-                  {plan.highlight && (
-                    <div className="bg-gray-50 text-gray-700 px-4 py-2 rounded-lg text-sm mb-6">
-                      {plan.highlight}
+                <div className="p-6 sm:p-8">
+                  <div className="space-y-4">
+                    <h3 className="text-2xl font-bold text-gray-900">{plan.name}</h3>
+                    <div className="flex items-baseline space-x-2">
+                      <span className="text-4xl sm:text-5xl font-bold text-gray-900">${plan.price}</span>
+                      <span className="text-gray-600 text-lg sm:text-xl">/{plan.period}</span>
                     </div>
-                  )}
+                    <p className="text-base sm:text-lg text-gray-700 font-medium">{plan.billing}</p>
+                    <p className="text-sm text-gray-600">{plan.description}</p>
+                    {plan.highlight && (
+                      <div className="bg-purple-50 text-purple-700 px-4 py-3 rounded-lg text-sm font-medium border border-purple-100 shadow-sm">
+                        {plan.highlight}
+                      </div>
+                    )}
+                  </div>
 
                   <button
                     onClick={handleSubscribe}
                     disabled={processing || subscription?.status === 'active'}
-                    className={`w-full py-4 rounded-lg font-semibold text-lg transition flex items-center justify-center space-x-2 ${
+                    className={`w-full mt-6 py-3.5 rounded-xl font-semibold text-base sm:text-lg transition flex items-center justify-center space-x-2 shadow ${
                       plan.popular
-                        ? 'bg-purple-600 hover:bg-purple-700 text-white disabled:bg-purple-400 disabled:cursor-not-allowed'
-                        : 'bg-gray-100 hover:bg-gray-200 text-gray-800 disabled:bg-gray-300 disabled:cursor-not-allowed'
+                        ? 'bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white disabled:from-purple-400 disabled:to-indigo-400 disabled:cursor-not-allowed'
+                        : 'bg-gray-100 hover:bg-gray-200 text-gray-800 disabled:bg-gray-200 disabled:cursor-not-allowed'
                     }`}
                   >
                     {processing ? (
@@ -340,13 +347,13 @@ export function BillingPage() {
             ))}
           </div>
 
-          <div className="bg-white rounded-lg shadow-lg p-8 mt-8">
-            <h2 className="text-2xl font-bold text-gray-800 mb-6">All Plans Include</h2>
-            <div className="grid md:grid-cols-2 gap-4">
+          <div className="bg-white rounded-2xl shadow-lg p-6 sm:p-8 mt-10 border border-purple-100/60">
+            <h2 className="text-2xl font-bold text-gray-900 mb-6 text-balance">All Plans Include</h2>
+            <div className="grid gap-4 sm:grid-cols-2">
               {FEATURES.map((feature, index) => (
-                <div key={index} className="flex items-center space-x-3">
+                <div key={index} className="flex items-center space-x-3 bg-gray-50 rounded-xl px-4 py-3 border border-gray-100">
                   <Check className="w-5 h-5 text-green-600 flex-shrink-0" />
-                  <span className="text-gray-700">{feature}</span>
+                  <span className="text-gray-700 text-sm sm:text-base">{feature}</span>
                 </div>
               ))}
             </div>
@@ -354,33 +361,33 @@ export function BillingPage() {
 
           {/* Current Subscription Info */}
           {subscription?.status === 'active' && (
-            <div className="bg-white rounded-lg shadow-lg p-8 mt-8">
-              <h2 className="text-2xl font-bold text-gray-800 mb-6">Current Subscription</h2>
+            <div className="bg-white rounded-2xl shadow-lg p-6 sm:p-8 mt-10 border border-purple-100/60">
+              <h2 className="text-2xl font-bold text-gray-900 mb-6">Current Subscription</h2>
               <div className="space-y-4">
-                <div className="flex items-center justify-between p-4 bg-purple-50 rounded-lg">
-                  <div className="flex items-center space-x-3">
-                    <div className="bg-purple-600 text-white rounded-full p-2">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-4 bg-purple-50 rounded-xl border border-purple-100">
+                  <div className="flex items-center space-x-3 mb-4 sm:mb-0">
+                    <div className="bg-purple-600 text-white rounded-full p-2.5">
                       <Check className="w-5 h-5" />
                     </div>
                     <div>
-                      <p className="font-semibold text-gray-800">Active Subscription</p>
-                      <p className="text-sm text-gray-600">
+                      <p className="font-semibold text-gray-900 text-base sm:text-lg">Active Subscription</p>
+                      <p className="text-sm text-gray-600 mt-0.5">
                         {subscription.plan_type === 'monthly' ? 'Monthly Plan' : subscription.plan_type}
                       </p>
                     </div>
                   </div>
-                  <div className="text-right">
-                    <p className="text-sm text-gray-600">Status</p>
-                    <p className="font-semibold text-green-600 capitalize">{subscription.status}</p>
+                  <div className="text-sm text-gray-600 sm:text-right">
+                    <p>Status</p>
+                    <p className="font-semibold text-green-600 capitalize mt-1">{subscription.status}</p>
                   </div>
                 </div>
 
                 {subscription.current_period_end && (
-                  <div className="flex items-center space-x-3 p-4 bg-gray-50 rounded-lg">
+                  <div className="flex items-center space-x-3 p-4 bg-gray-50 rounded-xl border border-gray-100">
                     <Calendar className="w-5 h-5 text-gray-600" />
                     <div>
                       <p className="text-sm text-gray-600">Next billing date</p>
-                      <p className="font-semibold text-gray-800">
+                      <p className="font-semibold text-gray-900">
                         {new Date(subscription.current_period_end).toLocaleDateString()}
                       </p>
                     </div>
@@ -390,7 +397,7 @@ export function BillingPage() {
                 <button
                   onClick={handleManageSubscription}
                   disabled={processing}
-                  className="w-full flex items-center justify-center space-x-2 py-4 rounded-lg font-semibold bg-purple-600 hover:bg-purple-700 text-white disabled:bg-purple-400 disabled:cursor-not-allowed transition"
+                  className="w-full flex items-center justify-center space-x-2 py-3.5 rounded-xl font-semibold bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white disabled:from-purple-400 disabled:to-indigo-400 disabled:cursor-not-allowed transition shadow"
                 >
                   {processing ? (
                     <>
