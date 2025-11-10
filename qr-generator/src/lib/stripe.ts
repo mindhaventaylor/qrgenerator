@@ -19,6 +19,114 @@ export function getStripe(): Promise<Stripe | null> {
 }
 
 /**
+ * Detect user's currency based on browser locale
+ */
+function detectCurrency(): string {
+  try {
+    const locale = navigator.language || 'en-US';
+    const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    
+    console.log('[Currency Detection] Locale:', locale, 'Timezone:', timezone);
+    
+    // Currency map based on locale
+    const localeCurrencyMap: Record<string, string> = {
+      'pt-BR': 'brl',
+      'pt': 'eur',
+      'es': 'eur',
+      'es-ES': 'eur',
+      'es-MX': 'mxn',
+      'es-AR': 'ars',
+      'fr': 'eur',
+      'fr-FR': 'eur',
+      'de': 'eur',
+      'de-DE': 'eur',
+      'it': 'eur',
+      'nl': 'eur',
+      'en-GB': 'gbp',
+      'en-CA': 'cad',
+      'en-AU': 'aud',
+      'en-NZ': 'nzd',
+      'ja': 'jpy',
+      'ja-JP': 'jpy',
+      'zh': 'cny',
+      'zh-CN': 'cny',
+      'zh-TW': 'twd',
+      'ko': 'krw',
+      'ru': 'rub',
+      'pl': 'pln',
+      'tr': 'try',
+      'in': 'inr',
+    };
+    
+    // Check exact locale match first
+    if (localeCurrencyMap[locale]) {
+      console.log('[Currency Detection] Found exact match:', locale, '->', localeCurrencyMap[locale]);
+      return localeCurrencyMap[locale];
+    }
+    
+    // Check language code only (e.g., 'pt' from 'pt-BR')
+    const lang = locale.split('-')[0].toLowerCase();
+    if (localeCurrencyMap[lang]) {
+      console.log('[Currency Detection] Found language match:', lang, '->', localeCurrencyMap[lang]);
+      return localeCurrencyMap[lang];
+    }
+    
+    // Timezone-based detection for common cases
+    if (timezone.includes('America/Sao_Paulo') || timezone.includes('Brazil')) {
+      console.log('[Currency Detection] Timezone match: Brazil -> BRL');
+      return 'brl';
+    }
+    if (timezone.includes('Europe/')) {
+      console.log('[Currency Detection] Timezone match: Europe -> EUR');
+      return 'eur';
+    }
+    if (timezone.includes('Asia/Tokyo')) {
+      console.log('[Currency Detection] Timezone match: Tokyo -> JPY');
+      return 'jpy';
+    }
+    if (timezone.includes('Asia/Shanghai') || timezone.includes('Asia/Beijing')) {
+      console.log('[Currency Detection] Timezone match: China -> CNY');
+      return 'cny';
+    }
+    
+    // Default to USD
+    console.log('[Currency Detection] No match found, defaulting to USD');
+    return 'usd';
+  } catch (error) {
+    console.warn('[Currency Detection] Error detecting currency, defaulting to USD:', error);
+    return 'usd';
+  }
+}
+
+/**
+ * Get amount in cents for different currencies (equivalent to $5 USD)
+ */
+function getAmountForCurrency(currency: string): number {
+  // Approximate conversion rates (you may want to use a live API for accuracy)
+  const currencyAmounts: Record<string, number> = {
+    'usd': 500,      // $5.00
+    'brl': 2500,     // ~R$25.00
+    'eur': 450,      // ~€4.50
+    'gbp': 400,      // ~£4.00
+    'cad': 650,      // ~C$6.50
+    'aud': 750,      // ~A$7.50
+    'mxn': 8500,     // ~MX$85.00
+    'ars': 45000,    // ~AR$450.00
+    'jpy': 750,      // ~¥750
+    'cny': 3500,     // ~¥35.00
+    'inr': 400,      // ~₹400
+    'krw': 6500,     // ~₩6,500
+    'rub': 450,      // ~₽450
+    'pln': 2000,     // ~20 zł
+    'try': 150,      // ~₺150
+    'twd': 15000,    // ~NT$150
+    'nzd': 800,      // ~NZ$8.00
+  };
+  
+  return currencyAmounts[currency.toLowerCase()] || 500; // Default to $5 USD equivalent
+}
+
+/**
  * Create a checkout session and redirect to Stripe
  */
 export async function createCheckoutSession(userId: string): Promise<void> {
@@ -29,15 +137,29 @@ export async function createCheckoutSession(userId: string): Promise<void> {
       throw new Error('You must be logged in to subscribe');
     }
 
-    console.log('Calling create-checkout function for user:', userId);
+    // Detect user's currency
+    const currency = detectCurrency();
+    const amount = getAmountForCurrency(currency);
+    
+    console.log('=== CHECKOUT REQUEST ===');
+    console.log('User ID:', userId);
+    console.log('Detected Currency:', currency);
+    console.log('Amount:', amount);
+    console.log('Locale:', navigator.language);
+    console.log('Timezone:', Intl.DateTimeFormat().resolvedOptions().timeZone);
 
     // Call Supabase Edge Function to create checkout session
     const { data, error } = await supabase.functions.invoke('create-checkout', {
       body: {
         userId,
-        amount: 500, // $5.00 in cents
+        amount,
+        currency: currency.toLowerCase(), // Ensure lowercase
       }
     });
+    
+    console.log('=== CHECKOUT RESPONSE ===');
+    console.log('Response data:', data);
+    console.log('Response error:', error);
 
     console.log('Function response:', { data, error });
 
