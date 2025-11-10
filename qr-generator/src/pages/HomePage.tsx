@@ -75,15 +75,15 @@ const VARIANT_COPY: Record<LandingVariantKey, VariantCopy> = {
     heroFootnote: 'Full access to the tool. Sign up only to save your QR codes.'
   },
   page2: {
-    heroBadge: 'No hidden fees • Unlimited automations',
-    heroTitle: 'Automate QR follow-ups for $5/month',
+    heroBadge: 'Try it free • No signup required • Build your QR code now',
+    heroTitle: 'Create your QR code instantly—pay only when you\'re ready to save',
     heroDescription:
-      'Schedule reminders, rotate offers, and trigger emails right after a scan. All automations are part of the same flat $5 membership—no add-ons required.',
-    primaryCtaLabel: 'Automate QR campaigns',
+      'Build, customize, and preview your QR code right here. No account needed until you want to save it. See the value before you commit.',
+    primaryCtaLabel: 'Start building now',
     primaryCtaHref: '/signup',
-    secondaryCtaLabel: 'Explore automation playbooks',
+    secondaryCtaLabel: 'See how it works',
     secondaryCtaHref: '/faq',
-    heroFootnote: 'Unlimited scans and workflows. One transparent plan.'
+    heroFootnote: 'Full access to the tool. Sign up only to save your QR codes.'
   },
   page3: {
     heroBadge: 'Brand-safe • Unlimited designs • $5/month',
@@ -313,57 +313,57 @@ const landingVariantConfigs: Record<Exclude<LandingVariantKey, 'control'>, Varia
       sectionBorder: 'border-white/10'
     },
     hero: {
-      layout: 'reverse',
-      supporting: 'Automated follow-ups, rotating offers, and trigger-based content — all in the $5 membership.',
+      layout: 'stacked',
+      supporting: 'Build your QR code right here. No signup needed until you want to save it.',
       stats: [
-        { label: 'Follow-up automations', value: 'Unlimited', helper: 'Included in plan' },
-        { label: 'Repeat visits', value: '+24%', helper: 'Hospitality benchmark' },
-        { label: 'Setup time', value: '15 min', helper: 'To schedule first campaign' }
+        { label: 'Build time', value: '< 2 min', helper: 'From start to preview' },
+        { label: 'QR types', value: '16+', helper: 'All available' },
+        { label: 'Signup required', value: 'Only to save', helper: 'Try everything first' }
       ],
       visual: 'rings'
     },
     supportingLayout: 'grid',
     supportingPoints: [
-      'Schedule campaigns around time of day, location, or returning customers.',
-      'Prompt staff with live alerts when VIP or repeat customers scan.',
-      'Swap promotions live without changing the printed code or paying per campaign.'
+      'Select any QR type and customize it completely.',
+      'Preview your QR code in real-time as you build.',
+      'Sign up only when you\'re ready to save and track scans.'
     ],
     featureLayout: 'stacked',
     features: [
-      { icon: 'analytics', title: 'Performance timeline', description: 'See how each campaign performs across locations and times.' },
-      { icon: 'settings', title: 'Smart content rules', description: 'Swap landing content by daypart, referral source, or audience tags.' },
-      { icon: 'zap', title: 'Instant alerts', description: 'Get notified the moment VIP or high-value customers scan.' }
+      { icon: 'qr', title: 'Full tool access', description: 'Use every feature without restrictions until you save.' },
+      { icon: 'palette', title: 'Live preview', description: 'See your QR code update as you customize it.' },
+      { icon: 'shield', title: 'No commitment', description: 'Build and preview free. Pay only to save your codes.' }
     ],
     highlight: {
-      eyebrow: 'Playbook · Hospitality',
-      title: 'Turn QR scans into repeat guests',
-      description: 'A boutique hotel used scheduled QR offers to bring back 1 in 3 guests within 45 days.',
-      metricValue: '32%',
-      metricLabel: 'Return rate from QR campaigns',
-      footnote: 'Same $5 plan. No upsell tiers.'
+      eyebrow: 'Try-before-you-buy',
+      title: 'See exactly what you\'re getting before you pay',
+      description: 'Build your QR code, customize it, preview it—all without creating an account. Sign up only when you\'re ready to save.',
+      metricValue: '100%',
+      metricLabel: 'Of features available before signup',
+      footnote: 'No watermarks. No limits. Just try it.'
     },
     pricing: {
-      eyebrow: 'Predictable automation pricing',
-      title: 'Automate every QR journey',
-      description: 'Dynamic routing, timed content, and integrations included. Cancel whenever you like.',
+      eyebrow: 'Pay only when you\'re ready',
+      title: 'Try everything, pay only to save',
+      description: 'Build unlimited QR codes and preview them all. Sign up and pay $5/month only when you want to save them.',
       price: '$5',
       suffix: '/month',
-      bullet: ['Unlimited rotating campaigns & live updates', 'Staff notifications included', 'Analytics for every campaign'],
-      footnote: 'Test campaigns before going live with sandbox modes.'
+      bullet: ['Build & preview unlimited QR codes', 'Full customization access', 'Sign up only to save'],
+      footnote: 'No credit card needed to try the tool.'
     },
     testimonial: {
       quote:
-        '"Our QR campaigns finally feel dynamic. We rotate promos daily without begging finance for another software approval."',
-      author: 'Marcus Lee',
-      role: 'Ops Director @ Ember Lounge Group'
+        '"I built 5 different QR codes before signing up. Being able to see exactly what I was getting made the decision easy."',
+      author: 'Sarah Chen',
+      role: 'Marketing Manager @ TechStart'
     },
     closing: {
-      title: 'Build your first automated QR campaign',
-      description: 'Launch rotating offers and follow-ups today — everything runs on the same $5 membership.',
-      primaryCtaLabel: 'Automate a QR touchpoint',
+      title: 'Ready to save your QR code?',
+      description: 'Sign up now to save your QR code and start tracking scans. Still just $5/month.',
+      primaryCtaLabel: 'Sign up to save',
       primaryCtaHref: '/signup',
-      secondaryCtaLabel: 'See automation ideas',
-      secondaryCtaHref: '/faq'
+      secondaryCtaLabel: 'Keep building',
+      secondaryCtaHref: '#'
     }
   },
   page3: {
@@ -1852,89 +1852,92 @@ function VariantLanding({ variantKey, copy, config }: VariantLandingProps) {
             </div>
           </nav>
 
-          <section className="py-16 md:py-24">
-            {config.hero.layout === 'stacked' ? (
-              <div className="mx-auto max-w-3xl text-center space-y-8">
-                <div className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-xs font-semibold uppercase tracking-wider ${config.theme.badge}`}>
-                  <Sparkles className="h-4 w-4" />
-                  <span className={config.theme.badgeText}>{copy.heroBadge}</span>
-                </div>
-                <h1 className={`text-4xl font-extrabold tracking-tight sm:text-5xl lg:text-6xl ${config.theme.text}`}>
-                  {copy.heroTitle}
-                </h1>
-                <p className={`text-base sm:text-lg leading-relaxed ${config.theme.subtext}`}>{copy.heroDescription}</p>
-                <div className="flex flex-col items-center justify-center gap-3 sm:flex-row sm:justify-center">
-                  <Link
-                    to={copy.primaryCtaHref}
-                    className={`inline-flex items-center justify-center gap-2 rounded-full px-8 py-3 text-base font-semibold transition ${config.theme.primaryButton} ${config.theme.primaryButtonHover}`}
-                  >
-                    {copy.primaryCtaLabel}
-                    <ArrowRight className="h-5 w-5" />
-                  </Link>
-                  <Link
-                    to={copy.secondaryCtaHref}
-                    className={`inline-flex items-center justify-center gap-2 rounded-full px-8 py-3 text-base font-semibold transition ${config.theme.secondaryButton} ${config.theme.secondaryButtonHover}`}
-                  >
-                    {copy.secondaryCtaLabel}
-                  </Link>
-                </div>
-                <p className={`text-sm ${config.theme.subtext}`}>{config.hero.supporting}</p>
-                <div className="mx-auto max-w-4xl">{renderHeroVisual()}</div>
-                <div className="grid gap-4 sm:grid-cols-3">
-                  {config.hero.stats.map((stat) => (
-                    <div key={stat.label} className={`rounded-3xl p-5 text-left ${config.theme.card}`}>
-                      <p className="text-xs uppercase tracking-wider text-slate-500">{stat.label}</p>
-                      <p className={`mt-2 text-2xl font-semibold ${config.theme.text}`}>{stat.value}</p>
-                      <p className={`text-xs ${config.theme.subtext}`}>{stat.helper}</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            ) : (
-              <div className="grid items-center gap-12 lg:gap-16 md:grid-cols-2">
-                <div
-                  className={`space-y-6 ${config.hero.layout === 'reverse' ? 'md:order-2 md:text-left text-left' : 'text-left'}`}
-                >
+          {/* Hero section - skip for page2 */}
+          {variantKey !== 'page2' && (
+            <section className="py-16 md:py-24">
+              {config.hero.layout === 'stacked' ? (
+                <div className="mx-auto max-w-3xl text-center space-y-8">
                   <div className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-xs font-semibold uppercase tracking-wider ${config.theme.badge}`}>
                     <Sparkles className="h-4 w-4" />
                     <span className={config.theme.badgeText}>{copy.heroBadge}</span>
                   </div>
-                  <h1 className={`text-4xl font-extrabold tracking-tight sm:text-5xl ${config.theme.text}`}>{copy.heroTitle}</h1>
+                  <h1 className={`text-4xl font-extrabold tracking-tight sm:text-5xl lg:text-6xl ${config.theme.text}`}>
+                    {copy.heroTitle}
+                  </h1>
                   <p className={`text-base sm:text-lg leading-relaxed ${config.theme.subtext}`}>{copy.heroDescription}</p>
-                  <div className="flex flex-col sm:flex-row sm:items-center sm:gap-4">
+                  <div className="flex flex-col items-center justify-center gap-3 sm:flex-row sm:justify-center">
                     <Link
                       to={copy.primaryCtaHref}
-                      className={`inline-flex items-center justify-center gap-2 rounded-full px-6 py-3 text-base font-semibold transition ${config.theme.primaryButton} ${config.theme.primaryButtonHover}`}
+                      className={`inline-flex items-center justify-center gap-2 rounded-full px-8 py-3 text-base font-semibold transition ${config.theme.primaryButton} ${config.theme.primaryButtonHover}`}
                     >
                       {copy.primaryCtaLabel}
                       <ArrowRight className="h-5 w-5" />
                     </Link>
                     <Link
                       to={copy.secondaryCtaHref}
-                      className={`mt-3 inline-flex items-center justify-center gap-2 rounded-full px-6 py-3 text-base font-semibold transition sm:mt-0 ${config.theme.secondaryButton} ${config.theme.secondaryButtonHover}`}
+                      className={`inline-flex items-center justify-center gap-2 rounded-full px-8 py-3 text-base font-semibold transition ${config.theme.secondaryButton} ${config.theme.secondaryButtonHover}`}
                     >
                       {copy.secondaryCtaLabel}
                     </Link>
                   </div>
                   <p className={`text-sm ${config.theme.subtext}`}>{config.hero.supporting}</p>
+                  <div className="mx-auto max-w-4xl">{renderHeroVisual()}</div>
                   <div className="grid gap-4 sm:grid-cols-3">
                     {config.hero.stats.map((stat) => (
-                      <div key={stat.label} className={`rounded-3xl p-5 ${config.theme.card}`}>
-                        <p className={`text-xs uppercase tracking-wider ${config.theme.subtext}`}>{stat.label}</p>
+                      <div key={stat.label} className={`rounded-3xl p-5 text-left ${config.theme.card}`}>
+                        <p className="text-xs uppercase tracking-wider text-slate-500">{stat.label}</p>
                         <p className={`mt-2 text-2xl font-semibold ${config.theme.text}`}>{stat.value}</p>
                         <p className={`text-xs ${config.theme.subtext}`}>{stat.helper}</p>
                       </div>
                     ))}
                   </div>
                 </div>
-                <div className={config.hero.layout === 'reverse' ? 'md:order-1' : ''}>{renderHeroVisual()}</div>
-              </div>
-            )}
-          </section>
+              ) : (
+                <div className="grid items-center gap-12 lg:gap-16 md:grid-cols-2">
+                  <div
+                    className={`space-y-6 ${config.hero.layout === 'reverse' ? 'md:order-2 md:text-left text-left' : 'text-left'}`}
+                  >
+                    <div className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-xs font-semibold uppercase tracking-wider ${config.theme.badge}`}>
+                      <Sparkles className="h-4 w-4" />
+                      <span className={config.theme.badgeText}>{copy.heroBadge}</span>
+                    </div>
+                    <h1 className={`text-4xl font-extrabold tracking-tight sm:text-5xl ${config.theme.text}`}>{copy.heroTitle}</h1>
+                    <p className={`text-base sm:text-lg leading-relaxed ${config.theme.subtext}`}>{copy.heroDescription}</p>
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:gap-4">
+                      <Link
+                        to={copy.primaryCtaHref}
+                        className={`inline-flex items-center justify-center gap-2 rounded-full px-6 py-3 text-base font-semibold transition ${config.theme.primaryButton} ${config.theme.primaryButtonHover}`}
+                      >
+                        {copy.primaryCtaLabel}
+                        <ArrowRight className="h-5 w-5" />
+                      </Link>
+                      <Link
+                        to={copy.secondaryCtaHref}
+                        className={`mt-3 inline-flex items-center justify-center gap-2 rounded-full px-6 py-3 text-base font-semibold transition sm:mt-0 ${config.theme.secondaryButton} ${config.theme.secondaryButtonHover}`}
+                      >
+                        {copy.secondaryCtaLabel}
+                      </Link>
+                    </div>
+                    <p className={`text-sm ${config.theme.subtext}`}>{config.hero.supporting}</p>
+                    <div className="grid gap-4 sm:grid-cols-3">
+                      {config.hero.stats.map((stat) => (
+                        <div key={stat.label} className={`rounded-3xl p-5 ${config.theme.card}`}>
+                          <p className={`text-xs uppercase tracking-wider ${config.theme.subtext}`}>{stat.label}</p>
+                          <p className={`mt-2 text-2xl font-semibold ${config.theme.text}`}>{stat.value}</p>
+                          <p className={`text-xs ${config.theme.subtext}`}>{stat.helper}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  <div className={config.hero.layout === 'reverse' ? 'md:order-1' : ''}>{renderHeroVisual()}</div>
+                </div>
+              )}
+            </section>
+          )}
 
-          {/* Prominent CTA for page1 */}
-          {variantKey === 'page1' && (
-            <section className="py-8 md:py-12">
+          {/* Prominent CTA for page1 and page2 - page2 shows this at the top */}
+          {(variantKey === 'page1' || variantKey === 'page2') && (
+            <section className={variantKey === 'page2' ? 'py-16 md:py-20' : 'py-8 md:py-12'}>
               <div className="text-center">
                 <Link
                   to={copy.primaryCtaHref}
