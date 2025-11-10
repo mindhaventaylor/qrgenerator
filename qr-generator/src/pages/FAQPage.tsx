@@ -1,7 +1,8 @@
 import { Link } from 'react-router-dom';
-import { QrCode, ChevronDown } from 'lucide-react';
+import { QrCode, ChevronDown, ArrowRight, CreditCard } from 'lucide-react';
 import { useState } from 'react';
 import { useSEO } from '../hooks/useSEO';
+import { useAuth } from '../contexts/AuthContext';
 
 const FAQS = [
   {
@@ -22,7 +23,7 @@ const FAQS = [
   },
   {
     question: 'Do you offer a free trial?',
-    answer: 'No. We believe in honest, transparent pricing from day one. Just $5/month - no trials, no tricks, no scams. What you see is what you pay.'
+    answer: 'No. We believe in honest, transparent pricing from day one. Just $5/month - no trials, no tricks, no scams. What you see is what you pay. Ready to get started? Check out our subscription page for full details.'
   },
   {
     question: 'Can I cancel my subscription anytime?',
@@ -54,6 +55,7 @@ export function FAQPage() {
   });
   
   const [openIndex, setOpenIndex] = useState<number | null>(0);
+  const { user } = useAuth();
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 text-white">
@@ -93,10 +95,50 @@ export function FAQPage() {
           ))}
         </div>
 
+        {/* Subscription CTA Section */}
+        <div className="max-w-3xl mx-auto mt-16 mb-12">
+          <div className="bg-gradient-to-r from-purple-600 to-indigo-600 rounded-2xl p-8 md:p-12 text-center shadow-2xl">
+            <CreditCard className="w-12 h-12 mx-auto mb-4 text-white" />
+            <h2 className="text-3xl md:text-4xl font-bold mb-4">Ready to Get Started?</h2>
+            <p className="text-lg md:text-xl text-purple-100 mb-6 max-w-2xl mx-auto">
+              Join thousands of users creating professional QR codes with advanced analytics. 
+              Simple $5/month pricing - no hidden fees, cancel anytime.
+            </p>
+            {user ? (
+              <Link 
+                to="/billing" 
+                className="inline-flex items-center gap-2 bg-white text-purple-600 hover:bg-gray-100 px-8 py-4 rounded-lg font-bold text-lg transition transform hover:scale-105 shadow-lg"
+              >
+                <CreditCard className="w-5 h-5" />
+                View Subscription & Pricing
+                <ArrowRight className="w-5 h-5" />
+              </Link>
+            ) : (
+              <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                <Link 
+                  to="/billing" 
+                  className="inline-flex items-center gap-2 bg-white text-purple-600 hover:bg-gray-100 px-8 py-4 rounded-lg font-bold text-lg transition transform hover:scale-105 shadow-lg"
+                >
+                  <CreditCard className="w-5 h-5" />
+                  View Pricing
+                  <ArrowRight className="w-5 h-5" />
+                </Link>
+                <Link 
+                  to="/signup" 
+                  className="inline-flex items-center gap-2 bg-purple-800 hover:bg-purple-900 text-white px-8 py-4 rounded-lg font-bold text-lg transition transform hover:scale-105 shadow-lg"
+                >
+                  Get Started Free
+                  <ArrowRight className="w-5 h-5" />
+                </Link>
+              </div>
+            )}
+          </div>
+        </div>
+
         <div className="text-center mt-12">
-          <p className="text-gray-300 mb-4">Still have questions?</p>
-          <Link to="/contact" className="inline-block bg-purple-600 hover:bg-purple-700 px-8 py-3 rounded-lg font-semibold transition">
-            Contact Us
+          <p className="text-gray-300 mb-4">Ready to get started?</p>
+          <Link to="/signup" className="inline-block bg-purple-600 hover:bg-purple-700 px-8 py-3 rounded-lg font-semibold transition">
+            Sign Up Now
           </Link>
         </div>
       </div>

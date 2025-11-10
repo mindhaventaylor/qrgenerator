@@ -25,8 +25,8 @@ export function LoginPage() {
     try {
       const { error } = await signIn(email, password);
       if (error) throw error;
-      // Redirect to create-qr so users can start creating immediately
-      navigate('/create-qr');
+      // Redirect to dashboard to see their QR codes
+      navigate('/dashboard');
     } catch (err: any) {
       setError(err.message || 'Failed to sign in');
     } finally {

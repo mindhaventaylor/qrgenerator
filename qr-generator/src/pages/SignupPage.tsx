@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useSEO } from '../hooks/useSEO';
+import { supabase } from '../lib/supabase';
 import { QrCode, Mail, Lock, User, Chrome } from 'lucide-react';
 
 export function SignupPage() {
@@ -12,7 +13,6 @@ export function SignupPage() {
   });
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [error, setError] = useState('');
@@ -20,24 +20,17 @@ export function SignupPage() {
   const { signUp, signInWithGoogle, user } = useAuth();
   const navigate = useNavigate();
 
-  // Auto-redirect after successful signup (when user becomes available)
+  // Auto-redirect if user is already logged in (prevents showing signup page to logged-in users)
   useEffect(() => {
     if (user && !loading) {
-      // User is logged in, redirect to create-qr
-      navigate('/create-qr');
+      // User is already logged in, redirect immediately to create-qr
+      navigate('/create-qr', { replace: true });
     }
   }, [user, loading, navigate]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError('');
-
-    // Only check if passwords match - remove length requirement
-    if (password !== confirmPassword) {
-      setError('Passwords do not match');
-      return;
-    }
-
     setLoading(true);
 
     try {
@@ -48,18 +41,34 @@ export function SignupPage() {
 
       // Check if signup was successful
       if (result?.user) {
-        // User is automatically logged in by Supabase
-        // Wait a moment for auth state to update, then redirect
-        setTimeout(() => {
-          navigate('/create-qr');
-        }, 500);
-      } else if (result?.error) {
-        setError(result.error.message || 'Failed to create account');
+        // Supabase automatically logs in the user after signup (if email confirmation is disabled)
+        // Check if we have a session immediately
+        const { data: { session } } = await supabase.auth.getSession();
+        
+        if (session) {
+          // Session exists, redirect immediately
+          navigate('/create-qr', { replace: true });
+        } else {
+          // Wait for auth state change to propagate, then redirect
+          // The useEffect above will catch this when user becomes available
+          setTimeout(() => {
+            navigate('/create-qr', { replace: true });
+          }, 500);
+        }
+        
+        // Keep loading true to prevent form interaction during redirect
+        // The redirect will happen before loading is set to false
+      } else {
+        // If no user but no error thrown, something unexpected happened
+        setError('Failed to create account. Please try again.');
         setLoading(false);
       }
     } catch (err: any) {
-      setError(err.message || 'Failed to create account');
+      // Display the error message
+      const errorMessage = err?.message || err?.error?.message || 'Failed to create account. Please try again.';
+      setError(errorMessage);
       setLoading(false);
+      console.error('Signup error:', err);
     }
   }
 
@@ -88,8 +97,9 @@ export function SignupPage() {
           <h1 className="text-3xl font-bold text-white mb-6 text-center">Create Account</h1>
           
           {error && (
-            <div className="bg-red-500/20 border border-red-500 text-red-100 px-4 py-3 rounded-lg mb-4">
-              {error}
+            <div className="bg-red-500/20 border-2 border-red-500 text-red-100 px-4 py-3 rounded-lg mb-4 animate-pulse">
+              <div className="font-semibold mb-1">Error:</div>
+              <div>{error}</div>
             </div>
           )}
 
@@ -165,21 +175,6 @@ export function SignupPage() {
                   onChange={(e) => setPassword(e.target.value)}
                   className="w-full bg-white/20 border border-white/30 rounded-lg px-10 py-3 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
                   placeholder="Create a password"
-                  required
-                />
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-white text-sm font-medium mb-2">Confirm Password</label>
-              <div className="relative">
-                <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                <input
-                  type="password"
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  className="w-full bg-white/20 border border-white/30 rounded-lg px-10 py-3 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
-                  placeholder="Confirm your password"
                   required
                 />
               </div>

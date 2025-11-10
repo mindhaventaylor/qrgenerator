@@ -531,7 +531,7 @@ const landingVariantConfigs: Record<Exclude<LandingVariantKey, 'control'>, Varia
       stats: [
         { label: 'Campaign ROI tracked', value: '+37%', helper: 'Better scan attribution' },
         { label: 'Dashboards shared', value: 'Unlimited', helper: 'Invite stakeholders' },
-        { label: 'Data sources', value: 'PostHog + Stripe', helper: 'All included' }
+        { label: 'Analytics included', value: 'Real-time tracking', helper: 'All features' }
       ],
       visual: 'rings'
     },
@@ -545,7 +545,7 @@ const landingVariantConfigs: Record<Exclude<LandingVariantKey, 'control'>, Varia
     features: [
       { icon: 'analytics', title: 'Attribution clarity', description: 'Tie scans to conversions and revenue with built-in tracking.' },
       { icon: 'shield', title: 'Governance controls', description: 'Role-based access, audit logs, and compliant data handling.' },
-      { icon: 'settings', title: 'Connected data', description: 'Bring in PostHog and Stripe metrics without paying for another tool.' }
+      { icon: 'settings', title: 'Real-time analytics', description: 'Track scans, locations, devices, and conversions in real-time dashboards.' }
     ],
     highlight: {
       eyebrow: 'Executive dashboard rollout',
@@ -1019,7 +1019,10 @@ export function HomePage() {
             <p className="text-gray-400 text-sm md:text-base">Simple, honest pricing. Cancel anytime.</p>
           </div>
           <div className="hidden md:block">
-            <div className="w-full h-full min-h-[320px] rounded-xl shadow-2xl transform hover:scale-[1.02] transition duration-500 bg-gradient-to-br from-purple-600 via-indigo-600 to-blue-500 border border-white/10 flex items-center justify-center p-8">
+            <Link
+              to="/signup"
+              className="block w-full h-full min-h-[320px] rounded-xl shadow-2xl transform hover:scale-[1.02] transition duration-500 bg-gradient-to-br from-purple-600 via-indigo-600 to-blue-500 border border-white/10 flex items-center justify-center p-8 cursor-pointer"
+            >
               <div className="w-full h-full rounded-lg border border-white/20 bg-white/10 backdrop-blur-md p-6 flex flex-col justify-between text-left text-white">
                 <div>
                   <p className="text-sm uppercase tracking-wide text-white/70">Live analytics</p>
@@ -1043,7 +1046,7 @@ export function HomePage() {
                   Live dashboards update in real time with every scan — no refresh required.
                 </div>
               </div>
-            </div>
+            </Link>
           </div>
         </div>
       </section>
@@ -1054,14 +1057,15 @@ export function HomePage() {
         </h2>
         <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-8 gap-2 md:gap-4 mb-12 md:mb-16">
           {qrTypes.map((type) => (
-            <div
+            <Link
               key={type.name}
+              to="/signup"
               className="bg-white/10 backdrop-blur-sm rounded-lg p-2 md:p-4 text-center hover:bg-white/20 transition cursor-pointer"
               title={type.description}
             >
               <div className="text-2xl md:text-4xl mb-1 md:mb-2">{type.icon}</div>
               <div className="text-xs md:text-sm font-semibold break-words">{type.name}</div>
-            </div>
+            </Link>
           ))}
         </div>
       </section>
@@ -1093,20 +1097,24 @@ export function HomePage() {
         <div className="grid lg:grid-cols-2 gap-12 items-center">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 md:gap-8">
             {features.map(({ icon: Icon, title, description }) => (
-              <div
+              <Link
                 key={title}
-                className="bg-white/10 backdrop-blur-sm rounded-xl p-4 md:p-6 hover:bg-white/20 transition border border-white/10 shadow-lg"
+                to="/signup"
+                className="bg-white/10 backdrop-blur-sm rounded-xl p-4 md:p-6 hover:bg-white/20 transition border border-white/10 shadow-lg cursor-pointer block"
               >
                 <div className="text-purple-400 mb-3 md:mb-4">
                   <Icon className="w-8 h-8" />
                 </div>
                 <h3 className="text-lg md:text-xl font-bold mb-2">{title}</h3>
                 <p className="text-sm md:text-base text-gray-300">{description}</p>
-              </div>
+              </Link>
             ))}
           </div>
           <div className="hidden lg:block">
-            <div className="w-full h-full min-h-[320px] rounded-xl shadow-2xl border-4 border-purple-500/50 bg-gradient-to-br from-purple-600 via-indigo-600 to-purple-800 p-8 flex items-center justify-center">
+            <Link
+              to="/signup"
+              className="block w-full h-full min-h-[320px] rounded-xl shadow-2xl border-4 border-purple-500/50 bg-gradient-to-br from-purple-600 via-indigo-600 to-purple-800 p-8 flex items-center justify-center hover:scale-[1.02] transition cursor-pointer"
+            >
               <div className="w-full h-full rounded-lg border border-white/20 bg-white/10 backdrop-blur-lg p-6 text-white">
                 <h3 className="text-xl font-semibold mb-4">Detailed analytics dashboard</h3>
                 <p className="text-sm text-white/80">
@@ -1126,13 +1134,16 @@ export function HomePage() {
                   </div>
                 </div>
               </div>
-            </div>
+            </Link>
           </div>
         </div>
       </section>
 
       <section className="container mx-auto px-4 md:px-6 py-12 md:py-16">
-        <div className="bg-white/5 border border-white/10 rounded-3xl px-6 md:px-10 py-10">
+        <Link
+          to="/signup"
+          className="block bg-white/5 border border-white/10 rounded-3xl px-6 md:px-10 py-10 hover:bg-white/10 hover:scale-[1.01] transition cursor-pointer"
+        >
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6 mb-10">
             <div>
               <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold mb-3">Launch in minutes, not weeks</h2>
@@ -1147,7 +1158,10 @@ export function HomePage() {
           </div>
           <div className="grid md:grid-cols-3 gap-6">
             {workflow.map((item) => (
-              <div key={item.step} className="relative bg-white/5 rounded-2xl p-6 border border-white/10">
+              <div
+                key={item.step}
+                className="relative bg-white/5 rounded-2xl p-6 border border-white/10"
+              >
                 <div className="absolute -top-4 left-6 w-12 h-12 rounded-full bg-purple-500 flex items-center justify-center font-semibold text-white text-lg">
                   {item.step}
                 </div>
@@ -1156,32 +1170,36 @@ export function HomePage() {
               </div>
             ))}
           </div>
-        </div>
+        </Link>
       </section>
 
       <section className="container mx-auto px-4 md:px-6 py-12 md:py-16">
-        <div className="bg-white/5 border border-white/10 rounded-3xl p-8 md:p-12">
+        <Link
+          to="/signup"
+          className="block bg-white/5 border border-white/10 rounded-3xl p-8 md:p-12 hover:bg-white/10 hover:scale-[1.01] transition cursor-pointer"
+        >
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6 mb-8">
             <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold">Perfect for every industry</h2>
-            <Link
-              to="/signup"
-              className="inline-flex items-center gap-2 bg-purple-500 hover:bg-purple-600 text-white px-5 py-3 rounded-lg transition"
-            >
+            <div className="inline-flex items-center gap-2 bg-purple-500 hover:bg-purple-600 text-white px-5 py-3 rounded-lg transition">
               Create your QR space
               <ArrowRight className="w-5 h-5" />
-            </Link>
+            </div>
           </div>
           <p className="text-base text-slate-200 max-w-3xl mb-6">
             Spin up digital menus, link-in-bio hubs, coupon offers, onboarding flows, and more. generatecodeqr gives you the polish of an agency build with the speed of a DIY editor.
           </p>
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {useCases.map((useCase) => (
-              <div key={useCase} className="bg-white/10 border border-white/10 rounded-2xl px-5 py-6 text-center text-sm font-semibold tracking-wide text-slate-100 uppercase">
+              <Link
+                key={useCase}
+                to="/signup"
+                className="bg-white/10 border border-white/10 rounded-2xl px-5 py-6 text-center text-sm font-semibold tracking-wide text-slate-100 uppercase hover:bg-white/20 hover:scale-[1.02] transition cursor-pointer"
+              >
                 {useCase}
-              </div>
+              </Link>
             ))}
           </div>
-        </div>
+        </Link>
       </section>
 
       <section className="container mx-auto px-4 md:px-6 py-12 md:py-16">
@@ -1190,11 +1208,15 @@ export function HomePage() {
         </h2>
         <div className="max-w-5xl mx-auto grid md:grid-cols-2 gap-6">
           {testimonials.map((testimonial) => (
-            <div key={testimonial.author} className="bg-white/10 border border-white/10 rounded-3xl p-6 md:p-8">
+            <Link
+              key={testimonial.author}
+              to="/signup"
+              className="bg-white/10 border border-white/10 rounded-3xl p-6 md:p-8 hover:bg-white/20 hover:scale-[1.02] transition cursor-pointer block"
+            >
               <p className="text-sm md:text-base text-slate-100/90 mb-4">{testimonial.quote}</p>
               <div className="text-sm font-semibold text-white">{testimonial.author}</div>
               <div className="text-xs uppercase tracking-wide text-slate-300">{testimonial.role}</div>
-            </div>
+            </Link>
           ))}
         </div>
       </section>
@@ -1249,11 +1271,11 @@ export function HomePage() {
               </ul>
             </div>
             <div>
-              <h4 className="font-bold mb-4">Support</h4>
+              <h4 className="font-bold mb-4">Get Started</h4>
               <ul className="space-y-2 text-slate-300">
                 <li>
-                  <Link to="/contact" className="hover:text-white transition">
-                    Contact Us
+                  <Link to="/signup" className="hover:text-white transition font-semibold">
+                    Sign Up
                   </Link>
                 </li>
               </ul>
@@ -1712,8 +1734,8 @@ function VariantLanding({ variantKey, copy, config }: VariantLandingProps) {
                 </div>
               </div>
               <div className="mt-6 flex items-center justify-between rounded-2xl border border-white/10 p-4 text-xs text-white/80">
-                <span>PostHog → generatecodeqr</span>
-                <span>Stripe revenue connected</span>
+                <span>Live tracking active</span>
+                <span>Analytics enabled</span>
               </div>
             </div>
           </div>
@@ -1726,15 +1748,16 @@ function VariantLanding({ variantKey, copy, config }: VariantLandingProps) {
       return (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {config.supportingPoints.map((point, index) => (
-            <div key={point} className={`rounded-2xl p-5 text-sm ${config.theme.card} group hover:scale-[1.02] transition cursor-pointer`}>
+            <Link
+              key={point}
+              to={copy.primaryCtaHref}
+              className={`rounded-2xl p-5 text-sm ${config.theme.card} group hover:scale-[1.02] transition cursor-pointer block`}
+            >
               <p className="mb-3">{point}</p>
-              <Link
-                to={copy.primaryCtaHref}
-                className={`inline-flex items-center gap-2 text-xs font-semibold transition opacity-0 group-hover:opacity-100 ${config.theme.text}`}
-              >
+              <div className={`inline-flex items-center gap-2 text-xs font-semibold transition ${config.theme.text}`}>
                 Try now <ArrowRight className="h-3 w-3" />
-              </Link>
-            </div>
+              </div>
+            </Link>
           ))}
         </div>
       );
@@ -1753,7 +1776,7 @@ function VariantLanding({ variantKey, copy, config }: VariantLandingProps) {
                 {index + 1}
               </div>
               <p className="text-sm leading-relaxed text-white/80">{point}</p>
-              <div className="mt-2 inline-flex items-center gap-2 text-xs font-semibold transition opacity-0 group-hover:opacity-100 text-white">
+              <div className="mt-2 inline-flex items-center gap-2 text-xs font-semibold transition text-white">
                 Try now <ArrowRight className="h-3 w-3" />
               </div>
             </Link>
@@ -1765,20 +1788,21 @@ function VariantLanding({ variantKey, copy, config }: VariantLandingProps) {
     return (
       <div className="space-y-4">
         {config.supportingPoints.map((point, index) => (
-          <div key={point} className={`flex items-start gap-4 rounded-2xl p-5 ${config.theme.softCard} group hover:scale-[1.01] transition cursor-pointer`}>
+          <Link
+            key={point}
+            to={copy.primaryCtaHref}
+            className={`flex items-start gap-4 rounded-2xl p-5 ${config.theme.softCard} group hover:scale-[1.01] transition cursor-pointer block`}
+          >
             <div className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-900 text-sm font-semibold text-white">
               {index + 1}
             </div>
             <div className="flex-1">
               <p className={`text-sm leading-relaxed ${config.theme.subtext}`}>{point}</p>
-              <Link
-                to={copy.primaryCtaHref}
-                className={`mt-3 inline-flex items-center gap-2 text-xs font-semibold transition opacity-0 group-hover:opacity-100 ${config.theme.text}`}
-              >
+              <div className={`mt-3 inline-flex items-center gap-2 text-xs font-semibold transition ${config.theme.text}`}>
                 Try now <ArrowRight className="h-3 w-3" />
-              </Link>
+              </div>
             </div>
-          </div>
+          </Link>
         ))}
       </div>
     );
@@ -1857,10 +1881,13 @@ function VariantLanding({ variantKey, copy, config }: VariantLandingProps) {
             <section className="py-16 md:py-24">
               {config.hero.layout === 'stacked' ? (
                 <div className="mx-auto max-w-3xl text-center space-y-8">
-                  <div className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-xs font-semibold uppercase tracking-wider ${config.theme.badge}`}>
+                  <Link
+                    to={copy.primaryCtaHref}
+                    className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-xs font-semibold uppercase tracking-wider ${config.theme.badge} hover:scale-105 transition cursor-pointer`}
+                  >
                     <Sparkles className="h-4 w-4" />
                     <span className={config.theme.badgeText}>{copy.heroBadge}</span>
-                  </div>
+                  </Link>
                   <h1 className={`text-4xl font-extrabold tracking-tight sm:text-5xl lg:text-6xl ${config.theme.text}`}>
                     {copy.heroTitle}
                   </h1>
@@ -1897,10 +1924,13 @@ function VariantLanding({ variantKey, copy, config }: VariantLandingProps) {
                   <div
                     className={`space-y-6 ${config.hero.layout === 'reverse' ? 'md:order-2 md:text-left text-left' : 'text-left'}`}
                   >
-                    <div className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-xs font-semibold uppercase tracking-wider ${config.theme.badge}`}>
+                    <Link
+                      to={copy.primaryCtaHref}
+                      className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-xs font-semibold uppercase tracking-wider ${config.theme.badge} hover:scale-105 transition cursor-pointer`}
+                    >
                       <Sparkles className="h-4 w-4" />
                       <span className={config.theme.badgeText}>{copy.heroBadge}</span>
-                    </div>
+                    </Link>
                     <h1 className={`text-4xl font-extrabold tracking-tight sm:text-5xl ${config.theme.text}`}>{copy.heroTitle}</h1>
                     <p className={`text-base sm:text-lg leading-relaxed ${config.theme.subtext}`}>{copy.heroDescription}</p>
                     <div className="flex flex-col sm:flex-row sm:items-center sm:gap-4">
@@ -2121,11 +2151,11 @@ function VariantLanding({ variantKey, copy, config }: VariantLandingProps) {
                 </ul>
               </div>
               <div>
-                <h4 className={`mb-3 font-semibold ${config.theme.text}`}>Support</h4>
+                <h4 className={`mb-3 font-semibold ${config.theme.text}`}>Get Started</h4>
                 <ul className={`space-y-2 ${config.theme.subtext}`}>
                   <li>
-                    <Link to="/contact" className="transition hover:opacity-80">
-                      Contact Us
+                    <Link to={copy.primaryCtaHref} className="transition hover:opacity-80 font-semibold">
+                      Sign Up
                     </Link>
                   </li>
                 </ul>

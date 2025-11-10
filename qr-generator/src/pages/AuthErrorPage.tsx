@@ -95,9 +95,9 @@ export function AuthErrorPage() {
           </div>
 
           <p className="text-center text-gray-300 mt-6 text-sm">
-            Need help?{' '}
-            <Link to="/contact" className="text-purple-400 hover:text-purple-300 font-semibold">
-              Contact Support
+            New to generatecodeqr?{' '}
+            <Link to="/signup" className="text-purple-400 hover:text-purple-300 font-semibold">
+              Sign Up
             </Link>
           </p>
         </div>

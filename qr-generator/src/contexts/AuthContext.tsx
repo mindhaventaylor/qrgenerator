@@ -53,7 +53,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     });
 
-    if (error) throw error;
+    if (error) {
+      // Return error in a way that can be caught
+      throw new Error(error.message || 'Failed to create account');
+    }
+    
     return data;
   }
 

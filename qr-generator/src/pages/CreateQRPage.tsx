@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { createQRCode, uploadFile, buildQRData } from '../lib/qrGenerator';
 import { checkSubscriptionStatus } from '../lib/subscriptionCheck';
+import { createCheckoutSession } from '../lib/stripe';
 import { useSEO } from '../hooks/useSEO';
 import {
   Globe,
@@ -72,8 +73,10 @@ export function CreateQRPage() {
   const [uploadProgress, setUploadProgress] = useState('');
   const [previewUrl, setPreviewUrl] = useState('');
   const [showPaywall, setShowPaywall] = useState(false);
+  const [checkoutLoading, setCheckoutLoading] = useState(false);
   const { user } = useAuth();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
 
   async function handleFileUpload(event: React.ChangeEvent<HTMLInputElement>, type: 'pdf' | 'images' | 'video' | 'mp3') {
     const file = event.target.files?.[0];
@@ -108,6 +111,33 @@ export function CreateQRPage() {
     }
   }
 
+  // Check for payment success/cancel in URL params
+  useEffect(() => {
+    const paymentStatus = searchParams.get('payment');
+    if (paymentStatus === 'success') {
+      // Payment successful - verify subscription and show success message
+      if (user) {
+        checkSubscriptionStatus(user.id).then(status => {
+          setCanCreateQR(status.canCreateQR);
+          setSubscriptionMessage(status.canCreateQR 
+            ? 'Payment successful! Your subscription is now active. You can now save your QR code.' 
+            : 'Payment processing... Please wait a moment.');
+          setSubscriptionChecked(true);
+          // Remove the payment parameter from URL
+          searchParams.delete('payment');
+          searchParams.delete('session_id');
+          setSearchParams(searchParams, { replace: true });
+        });
+      }
+    } else if (paymentStatus === 'canceled') {
+      // Payment canceled
+      setError('Payment was canceled. You can try again when ready.');
+      // Remove the payment parameter from URL
+      searchParams.delete('payment');
+      setSearchParams(searchParams, { replace: true });
+    }
+  }, [searchParams, setSearchParams, user]);
+
   useEffect(() => {
     // Only check subscription when user tries to save (not blocking the build process)
     async function verifySubscription() {
@@ -132,7 +162,7 @@ export function CreateQRPage() {
         const status = await checkSubscriptionStatus(user.id);
         if (status.canCreateQR) {
           setCanCreateQR(true);
-          setSubscriptionMessage('');
+          setSubscriptionMessage('Payment successful! Your subscription is now active.');
           clearInterval(interval);
         }
       }
@@ -1061,13 +1091,32 @@ export function CreateQRPage() {
                 <ArrowLeft className="w-5 h-5" />
                 Continue Editing
               </button>
-              <Link
-                to="/billing"
-                className="flex-1 inline-flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-semibold rounded-xl transition shadow-lg"
+              <button
+                onClick={async () => {
+                  if (!user) {
+                    setError('Please log in to subscribe');
+                    navigate('/login');
+                    return;
+                  }
+                  
+                  setCheckoutLoading(true);
+                  setError('');
+                  
+                  try {
+                    await createCheckoutSession(user.id);
+                    // createCheckoutSession will redirect to Stripe, so we don't need to do anything else
+                  } catch (err: any) {
+                    setError(err.message || 'Failed to start checkout. Please try again.');
+                    setCheckoutLoading(false);
+                    console.error('Checkout error:', err);
+                  }
+                }}
+                disabled={checkoutLoading}
+                className="flex-1 inline-flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold rounded-xl transition shadow-lg"
               >
-                Subscribe Now - $5/month
-                <ArrowRight className="w-5 h-5" />
-              </Link>
+                {checkoutLoading ? 'Loading...' : 'Subscribe Now - $5/month'}
+                {!checkoutLoading && <ArrowRight className="w-5 h-5" />}
+              </button>
             </div>
           </div>
         </div>
@@ -1131,12 +1180,31 @@ export function CreateQRPage() {
                     Subscribe now to save and unlock analytics. Only $5/month - honest pricing, no hidden fees.
                   </p>
                 </div>
-                <Link
-                  to="/billing"
-                  className="bg-white text-purple-600 hover:bg-purple-50 font-semibold px-5 py-3 rounded-xl transition text-center shadow"
+                <button
+                  onClick={async () => {
+                    if (!user) {
+                      setError('Please log in to subscribe');
+                      navigate('/login');
+                      return;
+                    }
+                    
+                    setCheckoutLoading(true);
+                    setError('');
+                    
+                    try {
+                      await createCheckoutSession(user.id);
+                      // createCheckoutSession will redirect to Stripe, so we don't need to do anything else
+                    } catch (err: any) {
+                      setError(err.message || 'Failed to start checkout. Please try again.');
+                      setCheckoutLoading(false);
+                      console.error('Checkout error:', err);
+                    }
+                  }}
+                  disabled={checkoutLoading}
+                  className="bg-white text-purple-600 hover:bg-purple-50 disabled:opacity-50 disabled:cursor-not-allowed font-semibold px-5 py-3 rounded-xl transition text-center shadow"
                 >
-                  Subscribe Now - $5/month
-                </Link>
+                  {checkoutLoading ? 'Loading...' : 'Subscribe Now - $5/month'}
+                </button>
               </div>
             </div>
           )}

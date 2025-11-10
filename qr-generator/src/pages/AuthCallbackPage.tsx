@@ -32,7 +32,8 @@ export function AuthCallbackPage() {
           const user = data.session.user;
           console.log('OAuth login successful for user:', user.email);
           
-          // Ensure profile exists (fallback if trigger didn't fire)
+          // Check if profile exists to determine if this is a new user or existing user
+          let isNewUser = false;
           try {
             const { data: profileData, error: profileError } = await supabase
               .from('profiles')
@@ -41,8 +42,11 @@ export function AuthCallbackPage() {
               .maybeSingle();
             
             if (!profileData && !profileError) {
-              // Profile doesn't exist, create it
-              console.log('Creating profile for user:', user.id);
+              // Profile doesn't exist - this is a new user
+              isNewUser = true;
+              console.log('New user detected, creating profile for user:', user.id);
+              
+              // Create profile for new user
               const { error: insertError } = await supabase
                 .from('profiles')
                 .insert({
@@ -58,16 +62,25 @@ export function AuthCallbackPage() {
               } else {
                 console.log('Profile created successfully');
               }
-              
-              // No trial subscription - users must subscribe to use the service
+            } else if (profileData) {
+              // Profile exists - this is an existing user
+              isNewUser = false;
+              console.log('Existing user detected');
             }
           } catch (profileCheckError) {
             console.error('Error checking/creating profile:', profileCheckError);
-            // Don't block the flow, continue to redirect
+            // If we can't determine, assume existing user and redirect to dashboard
+            isNewUser = false;
           }
           
-          // Success! Redirect to create-qr (so they can start creating immediately)
-          navigate('/create-qr');
+          // Redirect based on whether this is a new user or existing user
+          if (isNewUser) {
+            // New user signup - redirect to create QR code
+            navigate('/create-qr');
+          } else {
+            // Existing user login - redirect to dashboard
+            navigate('/dashboard');
+          }
         } else {
           // No session, redirect to login
           console.log('No session found in callback');

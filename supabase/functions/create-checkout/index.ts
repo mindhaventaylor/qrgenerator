@@ -121,8 +121,8 @@ Deno.serve(async (req) => {
         },
       ],
       locale: locale, // Set locale to match currency
-      success_url: `${origin}/billing?success=true&session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${origin}/billing?canceled=true`,
+      success_url: `${origin}/create-qr?payment=success&session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${origin}/create-qr?payment=canceled`,
       client_reference_id: userId,
       metadata: {
         userId: userId,
