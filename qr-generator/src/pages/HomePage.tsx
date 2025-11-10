@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState, type ReactNode } from 'react';
-import { Link } from 'react-router-dom';
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import {
   QrCode,
   Palette,
@@ -10,13 +10,33 @@ import {
   Sparkles,
   ArrowRight,
   Menu,
-  X
+  X,
+  Globe,
+  FileText,
+  Image as ImageIcon,
+  Video,
+  Wifi,
+  Menu as MenuIcon,
+  Briefcase,
+  User,
+  Music,
+  Smartphone,
+  Link as LinkIcon,
+  Ticket,
+  Facebook,
+  Instagram,
+  Share2,
+  MessageCircle,
+  Download,
+  Lock
 } from 'lucide-react';
 import { useSEO } from '../hooks/useSEO';
 import { posthog, POSTHOG_ENABLED } from '../lib/posthog';
 import { FEATURE_FLAGS } from '../lib/featureFlags';
+import { buildQRData } from '../lib/qrGenerator';
+import { useAuth } from '../contexts/AuthContext';
 
-type LandingVariantKey = 'control' | 'page1' | 'page2' | 'page3' | 'page4' | 'page5';
+type LandingVariantKey = 'control' | 'page1' | 'page2' | 'page3' | 'page4' | 'page5' | 'page6';
 
 type VariantCopy = {
   heroBadge: string;
@@ -29,7 +49,7 @@ type VariantCopy = {
   heroFootnote: string;
 };
 
-const VALID_VARIANTS: LandingVariantKey[] = ['control', 'page1', 'page2', 'page3', 'page4', 'page5'];
+const VALID_VARIANTS: LandingVariantKey[] = ['control', 'page1', 'page2', 'page3', 'page4', 'page5', 'page6'];
 
 const VARIANT_COPY: Record<LandingVariantKey, VariantCopy> = {
   control: {
@@ -44,15 +64,15 @@ const VARIANT_COPY: Record<LandingVariantKey, VariantCopy> = {
     heroFootnote: 'Simple, honest pricing. Cancel anytime.'
   },
   page1: {
-    heroBadge: 'Flat $5/month • Unlimited scans • No paywalls',
-    heroTitle: 'Collect leads with QR forms included in the $5 plan',
+    heroBadge: 'Try it free • No signup required • Build your QR code now',
+    heroTitle: 'Create your QR code instantly—pay only when you\'re ready to save',
     heroDescription:
-      'Launch lead capture QR pages with custom branding, routing, and automations—everything runs on the same predictable $5/month membership.',
-    primaryCtaLabel: 'Build lead-form QR pages',
+      'Build, customize, and preview your QR code right here. No account needed until you want to save it. See the value before you commit.',
+    primaryCtaLabel: 'Start building now',
     primaryCtaHref: '/signup',
-    secondaryCtaLabel: 'Preview lead templates',
+    secondaryCtaLabel: 'See how it works',
     secondaryCtaHref: '/faq',
-    heroFootnote: 'Unlimited responses. Zero hidden fees. Cancel anytime.'
+    heroFootnote: 'Full access to the tool. Sign up only to save your QR codes.'
   },
   page2: {
     heroBadge: 'No hidden fees • Unlimited automations',
@@ -97,6 +117,17 @@ const VARIANT_COPY: Record<LandingVariantKey, VariantCopy> = {
     secondaryCtaLabel: 'See reporting tour',
     secondaryCtaHref: '/faq',
     heroFootnote: 'Unlimited dashboards and alerts. Flat $5/month.'
+  },
+  page6: {
+    heroBadge: 'Try it free • No signup required • Build your QR code now',
+    heroTitle: 'Create your QR code instantly—pay only when you\'re ready to save',
+    heroDescription:
+      'Build, customize, and preview your QR code right here. No account needed until you want to save it. See the value before you commit.',
+    primaryCtaLabel: 'Start building now',
+    primaryCtaHref: '/signup',
+    secondaryCtaLabel: 'See how it works',
+    secondaryCtaHref: '/faq',
+    heroFootnote: 'Full access to the tool. Sign up only to save your QR codes.'
   }
 };
 
@@ -195,90 +226,90 @@ type VariantLandingConfig = {
 const landingVariantConfigs: Record<Exclude<LandingVariantKey, 'control'>, VariantLandingConfig> = {
   page1: {
     theme: {
-      wrapper: 'min-h-screen bg-gradient-to-br from-white via-sky-50 to-emerald-100 text-slate-900',
-      text: 'text-slate-900',
-      subtext: 'text-slate-500',
-      badge: 'bg-emerald-100 border border-emerald-300',
-      badgeText: 'text-emerald-700',
-      navText: 'text-slate-900',
-      primaryButton: 'bg-emerald-500 text-white',
-      primaryButtonHover: 'hover:bg-emerald-600',
-      secondaryButton: 'bg-white text-emerald-700 border border-emerald-200',
-      secondaryButtonHover: 'hover:bg-emerald-50',
-      card: 'bg-white shadow-xl border border-emerald-100',
-      softCard: 'bg-emerald-50 border border-emerald-100',
-      outline: 'border border-emerald-200',
-      sectionBorder: 'border-emerald-200'
+      wrapper: 'min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-800 text-white',
+      text: 'text-white',
+      subtext: 'text-white/70',
+      badge: 'bg-slate-700 border border-slate-500',
+      badgeText: 'text-white',
+      navText: 'text-white',
+      primaryButton: 'bg-emerald-400 text-slate-900',
+      primaryButtonHover: 'hover:bg-emerald-300',
+      secondaryButton: 'bg-transparent text-white border border-white/30',
+      secondaryButtonHover: 'hover:bg-white/10',
+      card: 'bg-slate-900/80 border border-white/10',
+      softCard: 'bg-slate-900/60 border border-white/5',
+      outline: 'border border-white/10',
+      sectionBorder: 'border-white/10'
     },
     hero: {
-      layout: 'split',
-      supporting: 'Lead capture forms, route logic, and thank-you flows included in the $5 membership.',
+      layout: 'stacked',
+      supporting: 'Build your QR code right here. No signup needed until you want to save it.',
       stats: [
-        { label: 'Average setup time', value: '7 min', helper: 'From scan to live form' },
-        { label: 'Leads captured', value: '+42%', helper: 'Compared to static codes' },
-        { label: 'Extra fees', value: '$0', helper: 'All included in $5/month' }
+        { label: 'Build time', value: '< 2 min', helper: 'From start to preview' },
+        { label: 'QR types', value: '16+', helper: 'All available' },
+        { label: 'Signup required', value: 'Only to save', helper: 'Try everything first' }
       ],
-      visual: 'cards'
+      visual: 'rings'
     },
     supportingLayout: 'grid',
     supportingPoints: [
-      'Unlimited QR landing forms with custom fields & validation.',
-      'Route submissions to email, Slack, or your CRM instantly.',
-      'Automated thank-you pages and coupon drops without add-ons.'
+      'Select any QR type and customize it completely.',
+      'Preview your QR code in real-time as you build.',
+      'Sign up only when you\'re ready to save and track scans.'
     ],
-    featureLayout: 'grid',
+    featureLayout: 'stacked',
     features: [
-      { icon: 'qr', title: 'Form-ready templates', description: 'Launch from lead captures, RSVPs, surveys, or waitlists in one click.' },
-      { icon: 'palette', title: 'Brand-safe design', description: 'Upload logos, choose fonts, and match your colors without upsells.' },
-      { icon: 'analytics', title: 'Live submission analytics', description: 'Track conversion rates, locations, and devices in real time.' }
+      { icon: 'qr', title: 'Full tool access', description: 'Use every feature without restrictions until you save.' },
+      { icon: 'palette', title: 'Live preview', description: 'See your QR code update as you customize it.' },
+      { icon: 'shield', title: 'No commitment', description: 'Build and preview free. Pay only to save your codes.' }
     ],
     highlight: {
-      eyebrow: 'Case study · Fitness studio',
-      title: 'Converted walk-ins at the door with QR forms',
-      description: 'UrbanFit replaced their paper waivers with a QR code form, collecting 380 new leads in two weeks.',
-      metricValue: '380',
-      metricLabel: 'New leads in 14 days',
-      footnote: 'No premium plan required. Flat $5 membership.'
+      eyebrow: 'Try-before-you-buy',
+      title: 'See exactly what you\'re getting before you pay',
+      description: 'Build your QR code, customize it, preview it—all without creating an account. Sign up only when you\'re ready to save.',
+      metricValue: '100%',
+      metricLabel: 'Of features available before signup',
+      footnote: 'No watermarks. No limits. Just try it.'
     },
     pricing: {
-      eyebrow: 'All features included',
-      title: 'The $5/month lead capture plan',
-      description: 'Unlimited forms, unlimited scans, and full analytics. Cancel anytime with one click.',
+      eyebrow: 'Pay only when you\'re ready',
+      title: 'Try everything, pay only to save',
+      description: 'Build unlimited QR codes and preview them all. Sign up and pay $5/month only when you want to save them.',
       price: '$5',
       suffix: '/month',
-      bullet: ['Unlimited QR forms & landing layouts', 'Automations, integrations, and exports', 'No per-lead or per-form fees'],
-      footnote: 'You own the data. Export at any time.'
+      bullet: ['Build & preview unlimited QR codes', 'Full customization access', 'Sign up only to save'],
+      footnote: 'No credit card needed to try the tool.'
     },
     testimonial: {
       quote:
-        '“We tested three QR tools. generatecodeqr was the only one that let us build branded forms and automations without hidden fees.”',
-      author: 'Lena Ortiz',
-      role: 'Growth Lead @ FlowCollective'
+        '"I built 5 different QR codes before signing up. Being able to see exactly what I was getting made the decision easy."',
+      author: 'Sarah Chen',
+      role: 'Marketing Manager @ TechStart'
     },
     closing: {
-      title: 'Launch a lead capture QR page today',
-      description: 'Spin up your first form-backed QR experience in under 10 minutes. Keep everything under the $5 plan.',
-      primaryCtaLabel: 'Create a lead QR page',
+      title: 'Ready to save your QR code?',
+      description: 'Sign up now to save your QR code and start tracking scans. Still just $5/month.',
+      primaryCtaLabel: 'Sign up to save',
       primaryCtaHref: '/signup',
-      secondaryCtaLabel: 'View template gallery',
-      secondaryCtaHref: '/faq'
+      secondaryCtaLabel: 'Keep building',
+      secondaryCtaHref: '#'
     }
   },
   page2: {
     theme: {
-      wrapper: 'min-h-screen bg-gradient-to-br from-slate-950 via-purple-950 to-rose-900 text-white',
+      wrapper: 'min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-800 text-white',
       text: 'text-white',
       subtext: 'text-white/70',
-      badge: 'bg-white/10 border border-white/20',
-      badgeText: 'text-white/80',
+      badge: 'bg-slate-700 border border-slate-500',
+      badgeText: 'text-white',
       navText: 'text-white',
-      primaryButton: 'bg-pink-500 text-white',
-      primaryButtonHover: 'hover:bg-pink-400',
-      secondaryButton: 'bg-white/10 text-white border border-white/20',
-      secondaryButtonHover: 'hover:bg-white/20',
-      card: 'bg-white/5 border border-white/10',
-      softCard: 'bg-white/10 border border-white/20',
-      outline: 'border border-white/15',
+      primaryButton: 'bg-pink-400 text-slate-900',
+      primaryButtonHover: 'hover:bg-pink-300',
+      secondaryButton: 'bg-transparent text-white border border-white/30',
+      secondaryButtonHover: 'hover:bg-white/10',
+      card: 'bg-slate-900/80 border border-white/10',
+      softCard: 'bg-slate-900/60 border border-white/5',
+      outline: 'border border-white/10',
       sectionBorder: 'border-white/10'
     },
     hero: {
@@ -289,15 +320,15 @@ const landingVariantConfigs: Record<Exclude<LandingVariantKey, 'control'>, Varia
         { label: 'Repeat visits', value: '+24%', helper: 'Hospitality benchmark' },
         { label: 'Setup time', value: '15 min', helper: 'To schedule first campaign' }
       ],
-      visual: 'glow'
+      visual: 'rings'
     },
-    supportingLayout: 'timeline',
+    supportingLayout: 'grid',
     supportingPoints: [
       'Schedule campaigns around time of day, location, or returning customers.',
       'Prompt staff with live alerts when VIP or repeat customers scan.',
       'Swap promotions live without changing the printed code or paying per campaign.'
     ],
-    featureLayout: 'columns',
+    featureLayout: 'stacked',
     features: [
       { icon: 'analytics', title: 'Performance timeline', description: 'See how each campaign performs across locations and times.' },
       { icon: 'settings', title: 'Smart content rules', description: 'Swap landing content by daypart, referral source, or audience tags.' },
@@ -322,7 +353,7 @@ const landingVariantConfigs: Record<Exclude<LandingVariantKey, 'control'>, Varia
     },
     testimonial: {
       quote:
-        '“Our QR campaigns finally feel dynamic. We rotate promos daily without begging finance for another software approval.”',
+        '"Our QR campaigns finally feel dynamic. We rotate promos daily without begging finance for another software approval."',
       author: 'Marcus Lee',
       role: 'Ops Director @ Ember Lounge Group'
     },
@@ -337,38 +368,38 @@ const landingVariantConfigs: Record<Exclude<LandingVariantKey, 'control'>, Varia
   },
   page3: {
     theme: {
-      wrapper: 'min-h-screen bg-white text-slate-900',
-      text: 'text-slate-900',
-      subtext: 'text-slate-500',
-      badge: 'bg-slate-900 text-white',
+      wrapper: 'min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-800 text-white',
+      text: 'text-white',
+      subtext: 'text-white/70',
+      badge: 'bg-slate-700 border border-slate-500',
       badgeText: 'text-white',
-      navText: 'text-slate-900',
-      primaryButton: 'bg-slate-900 text-white',
-      primaryButtonHover: 'hover:bg-slate-800',
-      secondaryButton: 'bg-white text-slate-900 border border-slate-900/20',
-      secondaryButtonHover: 'hover:bg-slate-100',
-      card: 'bg-slate-100 border border-slate-200',
-      softCard: 'bg-white border border-slate-200',
-      outline: 'border border-slate-200',
-      sectionBorder: 'border-slate-200'
+      navText: 'text-white',
+      primaryButton: 'bg-slate-400 text-slate-900',
+      primaryButtonHover: 'hover:bg-slate-300',
+      secondaryButton: 'bg-transparent text-white border border-white/30',
+      secondaryButtonHover: 'hover:bg-white/10',
+      card: 'bg-slate-900/80 border border-white/10',
+      softCard: 'bg-slate-900/60 border border-white/5',
+      outline: 'border border-white/10',
+      sectionBorder: 'border-white/10'
     },
     hero: {
-      layout: 'stacked',
+      layout: 'reverse',
       supporting: 'Deliver agency-level design without agency retainers. Everything stays inside the $5/month plan.',
       stats: [
         { label: 'Brand kits uploaded', value: 'Unlimited', helper: 'Fonts, colors, logos' },
         { label: 'Time to iterate', value: 'x4 faster', helper: 'vs. designer queue' },
         { label: 'Hidden fees', value: '$0', helper: 'Flat monthly pricing' }
       ],
-      visual: 'beams'
+      visual: 'rings'
     },
-    supportingLayout: 'stack',
+    supportingLayout: 'grid',
     supportingPoints: [
       'Drag and drop layouts designed for menus, products, events, and more.',
       'Upload brand fonts, color tokens, and components once — reuse forever.',
       'Share preview links with stakeholders for approvals before printing.'
     ],
-    featureLayout: 'grid',
+    featureLayout: 'stacked',
     features: [
       { icon: 'palette', title: 'Brand kits', description: 'Fonts, gradients, iconography, and button styles stored in one place.' },
       { icon: 'qr', title: 'Reusable sections', description: 'Mix hero, gallery, FAQ, and CTA blocks unique to QR experiences.' },
@@ -393,7 +424,7 @@ const landingVariantConfigs: Record<Exclude<LandingVariantKey, 'control'>, Varia
     },
     testimonial: {
       quote:
-        '“We ditched mockups and just share live QR previews with clients. generatecodeqr feels like a design system in a box.”',
+        '"We ditched mockups and just share live QR previews with clients. generatecodeqr feels like a design system in a box."',
       author: 'Courtney Ellis',
       role: 'Creative Director @ Signal Studio'
     },
@@ -408,38 +439,38 @@ const landingVariantConfigs: Record<Exclude<LandingVariantKey, 'control'>, Varia
   },
   page4: {
     theme: {
-      wrapper: 'min-h-screen bg-gradient-to-br from-amber-900 via-rose-900 to-purple-950 text-white',
+      wrapper: 'min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-800 text-white',
       text: 'text-white',
-      subtext: 'text-white/75',
-      badge: 'bg-white/10 border border-white/20',
-      badgeText: 'text-white/80',
+      subtext: 'text-white/70',
+      badge: 'bg-slate-700 border border-slate-500',
+      badgeText: 'text-white',
       navText: 'text-white',
       primaryButton: 'bg-amber-400 text-slate-900',
       primaryButtonHover: 'hover:bg-amber-300',
       secondaryButton: 'bg-transparent text-white border border-white/30',
       secondaryButtonHover: 'hover:bg-white/10',
-      card: 'bg-white/10 border border-white/20',
-      softCard: 'bg-black/30 border border-white/10',
-      outline: 'border border-white/15',
-      sectionBorder: 'border-white/15'
+      card: 'bg-slate-900/80 border border-white/10',
+      softCard: 'bg-slate-900/60 border border-white/5',
+      outline: 'border border-white/10',
+      sectionBorder: 'border-white/10'
     },
     hero: {
-      layout: 'split',
+      layout: 'reverse',
       supporting: 'Check-ins, agendas, and sponsor promos — smooth for attendees, simple for ops teams, all for $5/month.',
       stats: [
         { label: 'Attendees supported', value: 'Unlimited', helper: 'No per-head billing' },
         { label: 'Check-in speed', value: '-63%', helper: 'Faster than manual lists' },
         { label: 'Sponsor scans', value: '+29%', helper: 'Instant landing updates' }
       ],
-      visual: 'dashboard'
+      visual: 'rings'
     },
-    supportingLayout: 'timeline',
+    supportingLayout: 'grid',
     supportingPoints: [
       'Instant badge scanning with VIP routing and capacity tracking.',
       'Swap session schedules and room maps live without reprinting signage.',
       'Deliver sponsor promos or surveys immediately after sessions.'
     ],
-    featureLayout: 'columns',
+    featureLayout: 'stacked',
     features: [
       { icon: 'qr', title: 'Badge command center', description: 'Monitor live check-ins and capacity from any device.' },
       { icon: 'analytics', title: 'Session analytics', description: 'See engagement by track, speaker, and sponsor instantly.' },
@@ -464,7 +495,7 @@ const landingVariantConfigs: Record<Exclude<LandingVariantKey, 'control'>, Varia
     },
     testimonial: {
       quote:
-        '“We stopped paying per attendee. generatecodeqr gave us better analytics and happier sponsors for a fraction of the cost.”',
+        '"We stopped paying per attendee. generatecodeqr gave us better analytics and happier sponsors for a fraction of the cost."',
       author: 'Priya Anand',
       role: 'Event Lead @ LaunchCon'
     },
@@ -547,6 +578,77 @@ const landingVariantConfigs: Record<Exclude<LandingVariantKey, 'control'>, Varia
       secondaryCtaLabel: 'See reporting tour',
       secondaryCtaHref: '/faq'
     }
+  },
+  page6: {
+    theme: {
+      wrapper: 'min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-800 text-white',
+      text: 'text-white',
+      subtext: 'text-white/70',
+      badge: 'bg-slate-700 border border-slate-500',
+      badgeText: 'text-white',
+      navText: 'text-white',
+      primaryButton: 'bg-emerald-400 text-slate-900',
+      primaryButtonHover: 'hover:bg-emerald-300',
+      secondaryButton: 'bg-transparent text-white border border-white/30',
+      secondaryButtonHover: 'hover:bg-white/10',
+      card: 'bg-slate-900/80 border border-white/10',
+      softCard: 'bg-slate-900/60 border border-white/5',
+      outline: 'border border-white/10',
+      sectionBorder: 'border-white/10'
+    },
+    hero: {
+      layout: 'stacked',
+      supporting: 'Build your QR code right here. No signup needed until you want to save it.',
+      stats: [
+        { label: 'Build time', value: '< 2 min', helper: 'From start to preview' },
+        { label: 'QR types', value: '16+', helper: 'All available' },
+        { label: 'Signup required', value: 'Only to save', helper: 'Try everything first' }
+      ],
+      visual: 'rings'
+    },
+    supportingLayout: 'grid',
+    supportingPoints: [
+      'Select any QR type and customize it completely.',
+      'Preview your QR code in real-time as you build.',
+      'Sign up only when you\'re ready to save and track scans.'
+    ],
+    featureLayout: 'stacked',
+    features: [
+      { icon: 'qr', title: 'Full tool access', description: 'Use every feature without restrictions until you save.' },
+      { icon: 'palette', title: 'Live preview', description: 'See your QR code update as you customize it.' },
+      { icon: 'shield', title: 'No commitment', description: 'Build and preview free. Pay only to save your codes.' }
+    ],
+    highlight: {
+      eyebrow: 'Try-before-you-buy',
+      title: 'See exactly what you\'re getting before you pay',
+      description: 'Build your QR code, customize it, preview it—all without creating an account. Sign up only when you\'re ready to save.',
+      metricValue: '100%',
+      metricLabel: 'Of features available before signup',
+      footnote: 'No watermarks. No limits. Just try it.'
+    },
+    pricing: {
+      eyebrow: 'Pay only when you\'re ready',
+      title: 'Try everything, pay only to save',
+      description: 'Build unlimited QR codes and preview them all. Sign up and pay $5/month only when you want to save them.',
+      price: '$5',
+      suffix: '/month',
+      bullet: ['Build & preview unlimited QR codes', 'Full customization access', 'Sign up only to save'],
+      footnote: 'No credit card needed to try the tool.'
+    },
+    testimonial: {
+      quote:
+        '"I built 5 different QR codes before signing up. Being able to see exactly what I was getting made the decision easy."',
+      author: 'Sarah Chen',
+      role: 'Marketing Manager @ TechStart'
+    },
+    closing: {
+      title: 'Ready to save your QR code?',
+      description: 'Sign up now to save your QR code and start tracking scans. Still just $5/month.',
+      primaryCtaLabel: 'Sign up to save',
+      primaryCtaHref: '/signup',
+      secondaryCtaLabel: 'Keep building',
+      secondaryCtaHref: '#'
+    }
   }
 };
 
@@ -625,6 +727,9 @@ export function HomePage() {
     }
   ];
 
+  const STORAGE_KEY = 'landing_page_variant';
+  const COOKIE_KEY = 'landing_page_variant';
+
   const getQueryVariant = (): LandingVariantKey | null => {
     if (typeof window === 'undefined') {
       return null;
@@ -642,15 +747,83 @@ export function HomePage() {
     return null;
   };
 
+  const getCookie = (name: string): string | null => {
+    if (typeof document === 'undefined') return null;
+    const value = `; ${document.cookie}`;
+    const parts = value.split(`; ${name}=`);
+    if (parts.length === 2) {
+      return parts.pop()?.split(';').shift() || null;
+    }
+    return null;
+  };
+
+  const setCookie = (name: string, value: string, days: number = 365) => {
+    if (typeof document === 'undefined') return;
+    const expires = new Date();
+    expires.setTime(expires.getTime() + days * 24 * 60 * 60 * 1000);
+    document.cookie = `${name}=${value};expires=${expires.toUTCString()};path=/`;
+  };
+
+  const getStoredVariant = (): LandingVariantKey | null => {
+    if (typeof window === 'undefined') {
+      return null;
+    }
+    try {
+      // Check cookie first (more persistent)
+      const cookieVariant = getCookie(COOKIE_KEY);
+      if (cookieVariant && VALID_VARIANTS.includes(cookieVariant as LandingVariantKey)) {
+        return cookieVariant as LandingVariantKey;
+      }
+      // Fallback to localStorage
+      const stored = localStorage.getItem(STORAGE_KEY);
+      if (stored && VALID_VARIANTS.includes(stored as LandingVariantKey)) {
+        return stored as LandingVariantKey;
+      }
+    } catch (error) {
+      console.warn('[LandingPage] Failed to read stored variant', error);
+    }
+    return null;
+  };
+
+  const setStoredVariant = (variant: LandingVariantKey) => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+    try {
+      // Store in both cookie (for persistence) and localStorage (for immediate access)
+      setCookie(COOKIE_KEY, variant, 365); // Store for 1 year
+      localStorage.setItem(STORAGE_KEY, variant);
+    } catch (error) {
+      console.warn('[LandingPage] Failed to store variant', error);
+    }
+  };
+
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [activeVariant, setActiveVariant] = useState<LandingVariantKey>(() => getQueryVariant() ?? 'control');
+  const variantLockedRef = useRef(false); // Prevent PostHog from overriding stored variant
+  const [activeVariant, setActiveVariant] = useState<LandingVariantKey>(() => {
+    // Priority: query param > stored variant > control
+    const queryVariant = getQueryVariant();
+    if (queryVariant) {
+      variantLockedRef.current = true; // Lock variant when set from query param
+      return queryVariant;
+    }
+    const storedVariant = getStoredVariant();
+    if (storedVariant) {
+      variantLockedRef.current = true; // Lock variant when set from storage
+      return storedVariant;
+    }
+    return 'control';
+  });
   const variantCopy = useMemo(() => VARIANT_COPY[activeVariant], [activeVariant]);
 
   useEffect(() => {
     const queryVariant = getQueryVariant();
 
+    // Query param takes highest priority (for testing)
     if (queryVariant) {
+      variantLockedRef.current = true; // Lock variant to prevent PostHog from changing it
       setActiveVariant(queryVariant);
+      setStoredVariant(queryVariant);
       if (POSTHOG_ENABLED) {
         try {
           posthog.featureFlags.overrideFeatureFlags({
@@ -664,24 +837,69 @@ export function HomePage() {
       return;
     }
 
-    if (!POSTHOG_ENABLED) {
-      setActiveVariant('control');
+    // Check for stored variant first (persistence) - this takes priority over PostHog
+    const storedVariant = getStoredVariant();
+    if (storedVariant) {
+      variantLockedRef.current = true; // Lock variant to prevent PostHog from changing it
+      setActiveVariant(storedVariant);
+      // Override PostHog to match stored variant to prevent conflicts
+      if (POSTHOG_ENABLED) {
+        try {
+          posthog.featureFlags.overrideFeatureFlags({
+            [FEATURE_FLAGS.LANDINGPAGE_CONVERSION]: storedVariant
+          });
+          posthog.reloadFeatureFlags();
+        } catch (error) {
+          console.warn('[LandingPage] Failed to override PostHog flag with stored variant', error);
+        }
+      }
+      // Don't subscribe to PostHog changes - we want to keep the stored variant
       return;
     }
 
-    const applyFlag = (value: unknown) => {
-      if (value === 'control') {
-        setActiveVariant('control');
-        return;
-      }
-      if (typeof value === 'string' && VALID_VARIANTS.includes(value as LandingVariantKey)) {
-        setActiveVariant(value as LandingVariantKey);
-        return;
-      }
+    // If no stored variant, get from PostHog and store it (only on first visit)
+    if (!POSTHOG_ENABLED) {
       setActiveVariant('control');
+      setStoredVariant('control');
+      return;
+    }
+
+    // Only set up PostHog listener if we don't have a stored variant
+    let hasStoredVariant = false;
+    
+    const applyFlag = (value: unknown) => {
+      // Don't apply if we already have a stored variant (shouldn't happen, but safety check)
+      if (hasStoredVariant) {
+        return;
+      }
+      
+      let variant: LandingVariantKey = 'control';
+      
+      if (value === 'control') {
+        variant = 'control';
+      } else if (typeof value === 'string' && VALID_VARIANTS.includes(value as LandingVariantKey)) {
+        variant = value as LandingVariantKey;
+      }
+      
+      setActiveVariant(variant);
+      setStoredVariant(variant); // Store for persistence
     };
 
     const handleFlagChange = () => {
+      // Never override if variant is locked (from query param or storage)
+      if (variantLockedRef.current) {
+        return;
+      }
+      
+      // Double-check stored variant before applying PostHog value
+      const currentStored = getStoredVariant();
+      if (currentStored) {
+        hasStoredVariant = true;
+        variantLockedRef.current = true; // Lock it now
+        setActiveVariant(currentStored);
+        return;
+      }
+      
       const flagValue = posthog.getFeatureFlag(FEATURE_FLAGS.LANDINGPAGE_CONVERSION);
       applyFlag(flagValue);
     };
@@ -1065,6 +1283,288 @@ type VariantLandingProps = {
   config: VariantLandingConfig;
 };
 
+const QR_TYPES_INLINE = [
+  { id: 'website', name: 'Website', icon: Globe, description: 'Link to any website URL' },
+  { id: 'vcard', name: 'vCard', icon: User, description: 'Share a digital business card' },
+  { id: 'wifi', name: 'WiFi', icon: Wifi, description: 'Connect to a Wi-Fi network' },
+  { id: 'whatsapp', name: 'WhatsApp', icon: MessageCircle, description: 'Get WhatsApp messages' },
+  { id: 'facebook', name: 'Facebook', icon: Facebook, description: 'Share your Facebook page' },
+  { id: 'instagram', name: 'Instagram', icon: Instagram, description: 'Share your Instagram' },
+];
+
+function InlineQRBuilder({ config }: { config: VariantLandingConfig }) {
+  const [step, setStep] = useState(1);
+  const [selectedType, setSelectedType] = useState('');
+  const [content, setContent] = useState<any>({});
+  const [qrName, setQrName] = useState('');
+  const [previewUrl, setPreviewUrl] = useState('');
+  const [showSignupPrompt, setShowSignupPrompt] = useState(false);
+  const { user } = useAuth();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (step === 2 && selectedType && content) {
+      try {
+        const qrData = buildQRData(selectedType, content);
+        if (qrData && qrData.trim() !== '') {
+          const qrApiUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(qrData)}&format=png`;
+          setPreviewUrl(qrApiUrl);
+        } else {
+          setPreviewUrl('');
+        }
+      } catch (error) {
+        console.error('Error generating preview:', error);
+        setPreviewUrl('');
+      }
+    } else {
+      setPreviewUrl('');
+    }
+  }, [step, selectedType, content]);
+
+  const handleSave = () => {
+    if (!user) {
+      setShowSignupPrompt(true);
+      return;
+    }
+    navigate('/create-qr', { state: { type: selectedType, content, name: qrName } });
+  };
+
+  return (
+    <section className="py-12 md:py-16">
+      <div className={`rounded-3xl border ${config.theme.outline} ${config.theme.softCard} p-8 md:p-12`}>
+        <h2 className={`text-3xl font-bold mb-6 ${config.theme.text}`}>Build your QR code now</h2>
+        
+        {step === 1 && (
+          <div>
+            <p className={`mb-6 ${config.theme.subtext}`}>Select a QR code type to get started</p>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+              {QR_TYPES_INLINE.map((type) => {
+                const Icon = type.icon;
+                return (
+                  <button
+                    key={type.id}
+                    onClick={() => {
+                      setSelectedType(type.id);
+                      setStep(2);
+                    }}
+                    className={`p-6 rounded-xl border ${config.theme.outline} hover:border-emerald-400 transition text-center ${config.theme.card}`}
+                  >
+                    <Icon className={`w-8 h-8 mx-auto mb-3 ${config.theme.text}`} />
+                    <h3 className={`font-semibold mb-1 ${config.theme.text}`}>{type.name}</h3>
+                    <p className={`text-xs ${config.theme.subtext}`}>{type.description}</p>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {step === 2 && (
+          <div className="space-y-6">
+            <button
+              onClick={() => {
+                setStep(1);
+                setSelectedType('');
+                setContent({});
+                setQrName('');
+              }}
+              className={`text-sm ${config.theme.subtext} hover:opacity-80`}
+            >
+              ← Back to types
+            </button>
+
+            <div className="grid md:grid-cols-2 gap-8">
+              <div className="space-y-4">
+                <h3 className={`text-xl font-semibold ${config.theme.text}`}>Enter your details</h3>
+                
+                <div>
+                  <label className={`block text-sm font-medium mb-2 ${config.theme.subtext}`}>QR Code Name</label>
+                  <input
+                    type="text"
+                    value={qrName}
+                    onChange={(e) => setQrName(e.target.value)}
+                    className={`w-full px-4 py-3 rounded-lg border ${config.theme.outline} ${config.theme.card} ${config.theme.text} focus:outline-none focus:ring-2 focus:ring-emerald-400`}
+                    placeholder="My QR Code"
+                  />
+                </div>
+
+                {selectedType === 'website' && (
+                  <div>
+                    <label className={`block text-sm font-medium mb-2 ${config.theme.subtext}`}>Website URL</label>
+                    <input
+                      type="url"
+                      value={content.url || ''}
+                      onChange={(e) => setContent({ ...content, url: e.target.value })}
+                      className={`w-full px-4 py-3 rounded-lg border ${config.theme.outline} ${config.theme.card} ${config.theme.text} focus:outline-none focus:ring-2 focus:ring-emerald-400`}
+                      placeholder="https://example.com"
+                    />
+                  </div>
+                )}
+
+                {selectedType === 'vcard' && (
+                  <>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className={`block text-sm font-medium mb-2 ${config.theme.subtext}`}>First Name</label>
+                        <input
+                          type="text"
+                          value={content.firstName || ''}
+                          onChange={(e) => setContent({ ...content, firstName: e.target.value })}
+                          className={`w-full px-4 py-3 rounded-lg border ${config.theme.outline} ${config.theme.card} ${config.theme.text} focus:outline-none focus:ring-2 focus:ring-emerald-400`}
+                          placeholder="John"
+                        />
+                      </div>
+                      <div>
+                        <label className={`block text-sm font-medium mb-2 ${config.theme.subtext}`}>Last Name</label>
+                        <input
+                          type="text"
+                          value={content.lastName || ''}
+                          onChange={(e) => setContent({ ...content, lastName: e.target.value })}
+                          className={`w-full px-4 py-3 rounded-lg border ${config.theme.outline} ${config.theme.card} ${config.theme.text} focus:outline-none focus:ring-2 focus:ring-emerald-400`}
+                          placeholder="Doe"
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <label className={`block text-sm font-medium mb-2 ${config.theme.subtext}`}>Phone</label>
+                      <input
+                        type="tel"
+                        value={content.phone || ''}
+                        onChange={(e) => setContent({ ...content, phone: e.target.value })}
+                        className={`w-full px-4 py-3 rounded-lg border ${config.theme.outline} ${config.theme.card} ${config.theme.text} focus:outline-none focus:ring-2 focus:ring-emerald-400`}
+                        placeholder="+1234567890"
+                      />
+                    </div>
+                    <div>
+                      <label className={`block text-sm font-medium mb-2 ${config.theme.subtext}`}>Email</label>
+                      <input
+                        type="email"
+                        value={content.email || ''}
+                        onChange={(e) => setContent({ ...content, email: e.target.value })}
+                        className={`w-full px-4 py-3 rounded-lg border ${config.theme.outline} ${config.theme.card} ${config.theme.text} focus:outline-none focus:ring-2 focus:ring-emerald-400`}
+                        placeholder="john@example.com"
+                      />
+                    </div>
+                  </>
+                )}
+
+                {selectedType === 'wifi' && (
+                  <>
+                    <div>
+                      <label className={`block text-sm font-medium mb-2 ${config.theme.subtext}`}>Network Name (SSID)</label>
+                      <input
+                        type="text"
+                        value={content.ssid || ''}
+                        onChange={(e) => setContent({ ...content, ssid: e.target.value })}
+                        className={`w-full px-4 py-3 rounded-lg border ${config.theme.outline} ${config.theme.card} ${config.theme.text} focus:outline-none focus:ring-2 focus:ring-emerald-400`}
+                        placeholder="MyWiFi"
+                      />
+                    </div>
+                    <div>
+                      <label className={`block text-sm font-medium mb-2 ${config.theme.subtext}`}>Password</label>
+                      <input
+                        type="password"
+                        value={content.password || ''}
+                        onChange={(e) => setContent({ ...content, password: e.target.value })}
+                        className={`w-full px-4 py-3 rounded-lg border ${config.theme.outline} ${config.theme.card} ${config.theme.text} focus:outline-none focus:ring-2 focus:ring-emerald-400`}
+                        placeholder="password123"
+                      />
+                    </div>
+                  </>
+                )}
+
+                {selectedType === 'whatsapp' && (
+                  <div>
+                    <label className={`block text-sm font-medium mb-2 ${config.theme.subtext}`}>Phone Number</label>
+                    <input
+                      type="tel"
+                      value={content.phone || ''}
+                      onChange={(e) => setContent({ ...content, phone: e.target.value })}
+                      className={`w-full px-4 py-3 rounded-lg border ${config.theme.outline} ${config.theme.card} ${config.theme.text} focus:outline-none focus:ring-2 focus:ring-emerald-400`}
+                      placeholder="+1234567890"
+                    />
+                  </div>
+                )}
+
+                {selectedType === 'facebook' && (
+                  <div>
+                    <label className={`block text-sm font-medium mb-2 ${config.theme.subtext}`}>Facebook Page ID or Username</label>
+                    <input
+                      type="text"
+                      value={content.pageId || ''}
+                      onChange={(e) => setContent({ ...content, pageId: e.target.value })}
+                      className={`w-full px-4 py-3 rounded-lg border ${config.theme.outline} ${config.theme.card} ${config.theme.text} focus:outline-none focus:ring-2 focus:ring-emerald-400`}
+                      placeholder="yourpage"
+                    />
+                  </div>
+                )}
+
+                {selectedType === 'instagram' && (
+                  <div>
+                    <label className={`block text-sm font-medium mb-2 ${config.theme.subtext}`}>Instagram Username</label>
+                    <input
+                      type="text"
+                      value={content.username || ''}
+                      onChange={(e) => setContent({ ...content, username: e.target.value })}
+                      className={`w-full px-4 py-3 rounded-lg border ${config.theme.outline} ${config.theme.card} ${config.theme.text} focus:outline-none focus:ring-2 focus:ring-emerald-400`}
+                      placeholder="yourusername"
+                    />
+                  </div>
+                )}
+              </div>
+
+              <div className="flex flex-col items-center justify-center">
+                <div className={`rounded-2xl p-8 ${config.theme.card} border ${config.theme.outline}`}>
+                  <h4 className={`text-sm font-semibold mb-4 text-center ${config.theme.subtext}`}>Live Preview</h4>
+                  {previewUrl ? (
+                    <div className="flex flex-col items-center">
+                      <img src={previewUrl} alt="QR Code Preview" className="w-64 h-64 rounded-lg" />
+                      <p className={`mt-4 text-xs text-center ${config.theme.subtext}`}>
+                        Scan this QR code to test it
+                      </p>
+                    </div>
+                  ) : (
+                    <div className={`w-64 h-64 rounded-lg border-2 border-dashed ${config.theme.outline} flex items-center justify-center`}>
+                      <p className={`text-sm ${config.theme.subtext}`}>Fill in the form to see preview</p>
+                    </div>
+                  )}
+                </div>
+
+                {showSignupPrompt && (
+                  <div className={`mt-6 rounded-xl p-6 border ${config.theme.outline} ${config.theme.softCard} text-center`}>
+                    <Lock className={`w-8 h-8 mx-auto mb-3 ${config.theme.text}`} />
+                    <h4 className={`text-lg font-semibold mb-2 ${config.theme.text}`}>Sign up to save your QR code</h4>
+                    <p className={`text-sm mb-4 ${config.theme.subtext}`}>
+                      Your QR code is ready! Sign up now to save it and start tracking scans.
+                    </p>
+                    <Link
+                      to="/signup"
+                      className={`inline-flex items-center gap-2 rounded-full px-6 py-3 font-semibold transition ${config.theme.primaryButton} ${config.theme.primaryButtonHover}`}
+                    >
+                      Sign up to save
+                      <ArrowRight className="w-5 h-5" />
+                    </Link>
+                  </div>
+                )}
+
+                {!showSignupPrompt && previewUrl && (
+                  <button
+                    onClick={handleSave}
+                    className={`mt-6 inline-flex items-center gap-2 rounded-full px-8 py-4 font-semibold transition ${config.theme.primaryButton} ${config.theme.primaryButtonHover}`}
+                  >
+                    {user ? 'Save QR Code' : 'Sign up to save'}
+                    {user ? <Download className="w-5 h-5" /> : <Lock className="w-5 h-5" />}
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    </section>
+  );
+}
+
 function VariantLanding({ variantKey, copy, config }: VariantLandingProps) {
   const renderHeroVisual = () => {
     switch (config.hero.visual) {
@@ -1225,9 +1725,15 @@ function VariantLanding({ variantKey, copy, config }: VariantLandingProps) {
     if (config.supportingLayout === 'grid') {
       return (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {config.supportingPoints.map((point) => (
-            <div key={point} className={`rounded-2xl p-5 text-sm ${config.theme.card}`}>
-              {point}
+          {config.supportingPoints.map((point, index) => (
+            <div key={point} className={`rounded-2xl p-5 text-sm ${config.theme.card} group hover:scale-[1.02] transition cursor-pointer`}>
+              <p className="mb-3">{point}</p>
+              <Link
+                to={copy.primaryCtaHref}
+                className={`inline-flex items-center gap-2 text-xs font-semibold transition opacity-0 group-hover:opacity-100 ${config.theme.text}`}
+              >
+                Try now <ArrowRight className="h-3 w-3" />
+              </Link>
             </div>
           ))}
         </div>
@@ -1238,12 +1744,19 @@ function VariantLanding({ variantKey, copy, config }: VariantLandingProps) {
       return (
         <div className="relative border-l border-dashed border-white/20 pl-6">
           {config.supportingPoints.map((point, index) => (
-            <div key={point} className="relative mb-6 pl-4 last:mb-0">
-              <div className="absolute -left-[1.45rem] top-0 flex h-7 w-7 items-center justify-center rounded-full bg-white/15 text-xs font-semibold text-white/80">
+            <Link
+              key={point}
+              to={copy.primaryCtaHref}
+              className="relative mb-6 pl-4 last:mb-0 block group hover:scale-[1.01] transition cursor-pointer"
+            >
+              <div className="absolute -left-[1.45rem] top-0 flex h-7 w-7 items-center justify-center rounded-full bg-white/15 text-xs font-semibold text-white/80 group-hover:bg-white/25 transition">
                 {index + 1}
               </div>
               <p className="text-sm leading-relaxed text-white/80">{point}</p>
-            </div>
+              <div className="mt-2 inline-flex items-center gap-2 text-xs font-semibold transition opacity-0 group-hover:opacity-100 text-white">
+                Try now <ArrowRight className="h-3 w-3" />
+              </div>
+            </Link>
           ))}
         </div>
       );
@@ -1252,11 +1765,19 @@ function VariantLanding({ variantKey, copy, config }: VariantLandingProps) {
     return (
       <div className="space-y-4">
         {config.supportingPoints.map((point, index) => (
-          <div key={point} className={`flex items-start gap-4 rounded-2xl p-5 ${config.theme.softCard}`}>
+          <div key={point} className={`flex items-start gap-4 rounded-2xl p-5 ${config.theme.softCard} group hover:scale-[1.01] transition cursor-pointer`}>
             <div className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-900 text-sm font-semibold text-white">
               {index + 1}
             </div>
-            <p className={`text-sm leading-relaxed ${config.theme.subtext}`}>{point}</p>
+            <div className="flex-1">
+              <p className={`text-sm leading-relaxed ${config.theme.subtext}`}>{point}</p>
+              <Link
+                to={copy.primaryCtaHref}
+                className={`mt-3 inline-flex items-center gap-2 text-xs font-semibold transition opacity-0 group-hover:opacity-100 ${config.theme.text}`}
+              >
+                Try now <ArrowRight className="h-3 w-3" />
+              </Link>
+            </div>
           </div>
         ))}
       </div>
@@ -1280,13 +1801,20 @@ function VariantLanding({ variantKey, copy, config }: VariantLandingProps) {
           : 'bg-white/10 text-white';
 
     return (
-      <div key={feature.title} className={`rounded-3xl border ${config.theme.outline} p-6 shadow-lg ${config.theme.softCard}`}>
+      <Link
+        key={feature.title}
+        to={copy.primaryCtaHref}
+        className={`rounded-3xl border ${config.theme.outline} p-6 shadow-lg ${config.theme.softCard} block hover:scale-[1.02] transition cursor-pointer group`}
+      >
         <div className={`mb-4 inline-flex h-12 w-12 items-center justify-center rounded-full ${iconBg}`}>
           <Icon className="h-6 w-6" />
         </div>
         <h3 className={`text-lg font-semibold ${config.theme.text}`}>{feature.title}</h3>
         <p className={`mt-3 text-sm leading-relaxed ${config.theme.subtext}`}>{feature.description}</p>
-      </div>
+        <div className={`mt-4 inline-flex items-center gap-2 text-xs font-semibold transition opacity-0 group-hover:opacity-100 ${config.theme.text}`}>
+          Explore <ArrowRight className="h-3 w-3" />
+        </div>
+      </Link>
     );
   };
 
@@ -1307,9 +1835,11 @@ function VariantLanding({ variantKey, copy, config }: VariantLandingProps) {
               <span className="text-xl font-semibold tracking-tight">generatecodeqr</span>
             </div>
             <div className="hidden md:flex items-center gap-6">
-              <Link to="/faq" className={`text-sm transition ${config.theme.subtext} hover:opacity-80`}>
-                FAQ
-              </Link>
+              {!['page1', 'page2', 'page3', 'page4'].includes(variantKey) && (
+                <Link to="/faq" className={`text-sm transition ${config.theme.subtext} hover:opacity-80`}>
+                  FAQ
+                </Link>
+              )}
               <Link to="/login" className={`text-sm transition ${config.theme.subtext} hover:opacity-80`}>
                 Log In
               </Link>
@@ -1402,12 +1932,43 @@ function VariantLanding({ variantKey, copy, config }: VariantLandingProps) {
             )}
           </section>
 
+          {/* Prominent CTA for page1 */}
+          {variantKey === 'page1' && (
+            <section className="py-8 md:py-12">
+              <div className="text-center">
+                <Link
+                  to={copy.primaryCtaHref}
+                  className={`inline-flex items-center justify-center gap-3 rounded-full px-10 py-5 text-lg font-bold transition transform hover:scale-105 shadow-2xl ${config.theme.primaryButton} ${config.theme.primaryButtonHover}`}
+                >
+                  <QrCode className="h-6 w-6" />
+                  Build your QR code now
+                  <ArrowRight className="h-6 w-6" />
+                </Link>
+                <p className={`mt-4 text-sm ${config.theme.subtext}`}>
+                  No signup required • Try it free • See it work instantly
+                </p>
+              </div>
+            </section>
+          )}
+
+          {/* Inline QR Builder for page1 and page6 */}
+          {(variantKey === 'page1' || variantKey === 'page6') && <InlineQRBuilder config={config} />}
+
           <section className="py-12 md:py-16">
             <div className={`mb-8 flex items-center gap-3 text-sm font-semibold ${config.theme.subtext}`}>
               <div className="h-1 w-12 rounded-full bg-current opacity-60" />
               Lead journeys powered by $5/month
             </div>
             {renderSupportingPoints()}
+            <div className="mt-8 text-center">
+              <Link
+                to={copy.primaryCtaHref}
+                className={`inline-flex items-center justify-center gap-2 rounded-full px-8 py-3 text-base font-semibold transition ${config.theme.secondaryButton} ${config.theme.secondaryButtonHover}`}
+              >
+                Explore builder
+                <ArrowRight className="h-5 w-5" />
+              </Link>
+            </div>
           </section>
 
           <section className="py-12 md:py-16">
@@ -1436,12 +1997,25 @@ function VariantLanding({ variantKey, copy, config }: VariantLandingProps) {
                   <p className={`text-xs font-semibold uppercase tracking-wider ${config.theme.subtext}`}>{config.highlight.eyebrow}</p>
                   <h3 className={`mt-3 text-3xl font-bold ${config.theme.text}`}>{config.highlight.title}</h3>
                   <p className={`mt-4 text-sm leading-relaxed ${config.theme.subtext}`}>{config.highlight.description}</p>
+                  <Link
+                    to={copy.primaryCtaHref}
+                    className={`mt-6 inline-flex items-center justify-center gap-2 rounded-full px-6 py-3 text-sm font-semibold transition ${config.theme.primaryButton} ${config.theme.primaryButtonHover}`}
+                  >
+                    Try it now
+                    <ArrowRight className="h-4 w-4" />
+                  </Link>
                 </div>
-                <div className={`rounded-3xl p-6 ${config.theme.card}`}>
+                <Link
+                  to={copy.primaryCtaHref}
+                  className={`rounded-3xl p-6 ${config.theme.card} block hover:scale-[1.02] transition cursor-pointer group`}
+                >
                   <p className={`text-sm uppercase tracking-wider ${config.theme.subtext}`}>{config.highlight.metricLabel}</p>
                   <p className={`mt-2 text-4xl font-bold ${config.theme.text}`}>{config.highlight.metricValue}</p>
                   <p className={`mt-3 text-xs ${config.theme.subtext}`}>{config.highlight.footnote}</p>
-                </div>
+                  <div className={`mt-4 inline-flex items-center gap-2 text-xs font-semibold transition opacity-0 group-hover:opacity-100 ${config.theme.text}`}>
+                    Get started <ArrowRight className="h-3 w-3" />
+                  </div>
+                </Link>
               </div>
             </div>
           </section>
@@ -1473,11 +2047,17 @@ function VariantLanding({ variantKey, copy, config }: VariantLandingProps) {
                 </Link>
                 <p className={`mt-4 text-xs ${config.theme.subtext}`}>{config.pricing.footnote}</p>
               </div>
-              <div className={`rounded-3xl border p-8 ${config.theme.outline} ${config.theme.card}`}>
+              <Link
+                to={copy.primaryCtaHref}
+                className={`rounded-3xl border p-8 ${config.theme.outline} ${config.theme.card} block hover:scale-[1.01] transition cursor-pointer group`}
+              >
                 <p className="text-sm italic leading-relaxed">{config.testimonial.quote}</p>
                 <div className="mt-6 text-sm font-semibold">{config.testimonial.author}</div>
                 <div className={`text-xs uppercase tracking-wide ${config.theme.subtext}`}>{config.testimonial.role}</div>
-              </div>
+                <div className={`mt-4 inline-flex items-center gap-2 text-xs font-semibold transition opacity-0 group-hover:opacity-100 ${config.theme.text}`}>
+                  Join them <ArrowRight className="h-3 w-3" />
+                </div>
+              </Link>
             </div>
           </section>
 

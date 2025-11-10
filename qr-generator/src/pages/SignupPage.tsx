@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useSEO } from '../hooks/useSEO';
@@ -7,7 +7,7 @@ import { QrCode, Mail, Lock, User, Chrome } from 'lucide-react';
 export function SignupPage() {
   useSEO({
     title: 'Sign Up - generatecodeqr | Start Creating QR Codes Today',
-    description: 'Sign up for generatecodeqr and start creating dynamic QR codes with advanced analytics. Simple $5/month pricing with a 14-day free trial.',
+    description: 'Sign up for generatecodeqr and start creating dynamic QR codes with advanced analytics. Simple $5/month pricing - no trials, no hidden fees.',
     url: 'https://qrgenerator-liart.vercel.app/signup'
   });
   const [email, setEmail] = useState('');
@@ -17,34 +17,48 @@ export function SignupPage() {
   const [lastName, setLastName] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const { signUp, signInWithGoogle } = useAuth();
+  const { signUp, signInWithGoogle, user } = useAuth();
   const navigate = useNavigate();
+
+  // Auto-redirect after successful signup (when user becomes available)
+  useEffect(() => {
+    if (user && !loading) {
+      // User is logged in, redirect to create-qr
+      navigate('/create-qr');
+    }
+  }, [user, loading, navigate]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError('');
 
+    // Only check if passwords match - remove length requirement
     if (password !== confirmPassword) {
       setError('Passwords do not match');
-      return;
-    }
-
-    if (password.length < 6) {
-      setError('Password must be at least 6 characters');
       return;
     }
 
     setLoading(true);
 
     try {
-      await signUp(email, password, {
+      const result = await signUp(email, password, {
         first_name: firstName,
         last_name: lastName
       });
-      navigate('/dashboard');
+
+      // Check if signup was successful
+      if (result?.user) {
+        // User is automatically logged in by Supabase
+        // Wait a moment for auth state to update, then redirect
+        setTimeout(() => {
+          navigate('/create-qr');
+        }, 500);
+      } else if (result?.error) {
+        setError(result.error.message || 'Failed to create account');
+        setLoading(false);
+      }
     } catch (err: any) {
       setError(err.message || 'Failed to create account');
-    } finally {
       setLoading(false);
     }
   }
@@ -78,6 +92,21 @@ export function SignupPage() {
               {error}
             </div>
           )}
+
+          {/* Google Sign In - Top */}
+          <button
+            onClick={handleGoogleSignIn}
+            className="w-full bg-white hover:bg-gray-100 text-gray-800 font-semibold py-3 rounded-lg transition flex items-center justify-center space-x-2 mb-6"
+          >
+            <Chrome className="w-5 h-5" />
+            <span>Continue with Google</span>
+          </button>
+
+          <div className="my-6 flex items-center">
+            <div className="flex-1 border-t border-white/30"></div>
+            <span className="px-4 text-gray-400 text-sm">OR</span>
+            <div className="flex-1 border-t border-white/30"></div>
+          </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
@@ -164,20 +193,6 @@ export function SignupPage() {
               {loading ? 'Creating account...' : 'Create Account'}
             </button>
           </form>
-
-          <div className="my-6 flex items-center">
-            <div className="flex-1 border-t border-white/30"></div>
-            <span className="px-4 text-gray-400 text-sm">OR</span>
-            <div className="flex-1 border-t border-white/30"></div>
-          </div>
-
-          <button
-            onClick={handleGoogleSignIn}
-            className="w-full bg-white hover:bg-gray-100 text-gray-800 font-semibold py-3 rounded-lg transition flex items-center justify-center space-x-2"
-          >
-            <Chrome className="w-5 h-5" />
-            <span>Continue with Google</span>
-          </button>
 
           <p className="text-center text-gray-300 mt-6">
             Already have an account?{' '}

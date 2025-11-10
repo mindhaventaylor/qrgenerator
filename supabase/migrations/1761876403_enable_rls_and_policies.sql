@@ -82,23 +82,20 @@ BEGIN
   INSERT INTO public.profiles (id, email, created_at, updated_at)
   VALUES (
     NEW.id,
-    NEW.email,
+    COALESCE(NEW.email, ''),
     NOW(),
     NOW()
-  );
+  )
+  ON CONFLICT (id) DO NOTHING;
   
-  -- Create trial subscription for new users
-  INSERT INTO public.subscriptions (user_id, plan_type, status, trial_end_date, current_period_start, current_period_end)
-  VALUES (
-    NEW.id,
-    'monthly',
-    'trial',
-    NOW() + INTERVAL '14 days',
-    NOW(),
-    NOW() + INTERVAL '14 days'
-  );
+  -- No trial subscription - users must subscribe to use the service
   
   RETURN NEW;
+EXCEPTION
+  WHEN OTHERS THEN
+    -- Log error but don't fail the user creation
+    RAISE WARNING 'Error in handle_new_user trigger: %', SQLERRM;
+    RETURN NEW;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 

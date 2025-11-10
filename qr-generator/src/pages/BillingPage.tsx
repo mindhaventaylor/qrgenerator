@@ -4,9 +4,9 @@ import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
 import { createCheckoutSession, createPortalSession } from '../lib/stripe';
 import { useSEO } from '../hooks/useSEO';
-import { Check, Loader2, Calendar, Settings } from 'lucide-react';
+import { Check, Loader2, Calendar, Settings, BarChart3, TrendingUp, Users, Zap, Shield, Globe, Download } from 'lucide-react';
 
-const PLANS = [
+const PLANS_STANDARD = [
   {
     id: 'monthly',
     name: 'Monthly Plan',
@@ -16,6 +16,19 @@ const PLANS = [
     description: 'All features included',
     popular: true,
     highlight: 'Cancel anytime'
+  }
+];
+
+const PLANS_ONETIME = [
+  {
+    id: 'monthly',
+    name: '1 Month of Analytics',
+    price: 5.00,
+    period: 'one-time',
+    billing: 'One-time payment - $5 for 1 month',
+    description: 'Full access for 30 days, then $5/month to continue',
+    popular: true,
+    highlight: 'No commitment - pay once, use for a month'
   }
 ];
 
@@ -42,6 +55,9 @@ export function BillingPage() {
   const [processing, setProcessing] = useState(false);
   const [searchParams] = useSearchParams();
   const conversionTrackedRef = useRef<string | null>(null);
+  
+  // Get variant from URL (default to 'standard', test with ?variant=onetime)
+  const variant = searchParams.get('variant') || 'standard';
 
   useEffect(() => {
     loadSubscription();
@@ -255,10 +271,12 @@ export function BillingPage() {
             ← Back to Dashboard
           </Link>
           <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-3 sm:mb-4 text-balance">
-            Subscription & Billing
+            {variant === 'onetime' ? 'Get Started - One Month Access' : 'Subscription & Billing'}
           </h1>
           <p className="text-gray-600 text-base sm:text-lg mb-8 sm:mb-10 max-w-3xl text-pretty">
-            Simple, transparent pricing at $5/month. Cancel anytime.
+            {variant === 'onetime' 
+              ? 'Pay $5 once for full access to analytics and QR code creation for 30 days. Continue for $5/month if you want to keep going—or stop anytime.'
+              : 'Simple, transparent pricing at $5/month. Cancel anytime.'}
           </p>
 
           {/* Success Message */}
@@ -289,7 +307,99 @@ export function BillingPage() {
           )}
 
 
-          {/* Pricing Info */}
+          {/* Visual Benefits Section */}
+          <div className="bg-gradient-to-br from-purple-600 via-indigo-600 to-purple-700 rounded-3xl p-8 sm:p-12 mb-10 text-white shadow-2xl">
+            <div className="text-center mb-8">
+              <h2 className="text-3xl sm:text-4xl font-bold mb-4">Everything You Get</h2>
+              <p className="text-purple-100 text-lg max-w-2xl mx-auto">
+                {variant === 'onetime'
+                  ? 'See exactly what your $5 unlocks—powerful analytics, unlimited QR codes, and professional features for 30 days.'
+                  : 'See exactly what your $5/month unlocks—powerful analytics, unlimited QR codes, and professional features.'}
+              </p>
+            </div>
+
+            {/* Dashboard Preview */}
+            <div className="bg-white/10 backdrop-blur-md rounded-2xl p-6 sm:p-8 mb-8 border border-white/20">
+              <div className="flex items-center gap-3 mb-6">
+                <BarChart3 className="w-6 h-6" />
+                <h3 className="text-xl font-semibold">Real-Time Analytics Dashboard</h3>
+              </div>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
+                <div className="bg-white/10 rounded-xl p-4 border border-white/20">
+                  <div className="text-3xl font-bold mb-1">12.4K</div>
+                  <div className="text-sm text-purple-100">Total Scans</div>
+                  <div className="text-xs text-green-300 mt-1 flex items-center gap-1">
+                    <TrendingUp className="w-3 h-3" />
+                    +24% this month
+                  </div>
+                </div>
+                <div className="bg-white/10 rounded-xl p-4 border border-white/20">
+                  <div className="text-3xl font-bold mb-1">847</div>
+                  <div className="text-sm text-purple-100">QR Codes</div>
+                  <div className="text-xs text-purple-200 mt-1">Active campaigns</div>
+                </div>
+                <div className="bg-white/10 rounded-xl p-4 border border-white/20">
+                  <div className="text-3xl font-bold mb-1">68%</div>
+                  <div className="text-sm text-purple-100">Mobile Users</div>
+                  <div className="text-xs text-purple-200 mt-1">Most common device</div>
+                </div>
+                <div className="bg-white/10 rounded-xl p-4 border border-white/20">
+                  <div className="text-3xl font-bold mb-1">42%</div>
+                  <div className="text-sm text-purple-100">Click Rate</div>
+                  <div className="text-xs text-green-300 mt-1 flex items-center gap-1">
+                    <TrendingUp className="w-3 h-3" />
+                    Above average
+                  </div>
+                </div>
+              </div>
+              <div className="bg-white/5 rounded-xl p-4 border border-white/10">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-purple-100">Top Performing QR Code</span>
+                  <span className="font-semibold">Restaurant Menu QR</span>
+                </div>
+                <div className="mt-2 h-2 bg-white/20 rounded-full overflow-hidden">
+                  <div className="h-full bg-gradient-to-r from-green-400 to-emerald-400 rounded-full" style={{ width: '78%' }}></div>
+                </div>
+                <div className="mt-2 text-xs text-purple-200">3,240 scans in the last 30 days</div>
+              </div>
+            </div>
+
+            {/* Feature Grid */}
+            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="bg-white/10 backdrop-blur-sm rounded-xl p-5 border border-white/20">
+                <Globe className="w-8 h-8 mb-3 text-purple-200" />
+                <h4 className="font-semibold mb-2">Unlimited QR Codes</h4>
+                <p className="text-sm text-purple-100">Create as many QR codes as you need. No limits, no restrictions.</p>
+              </div>
+              <div className="bg-white/10 backdrop-blur-sm rounded-xl p-5 border border-white/20">
+                <BarChart3 className="w-8 h-8 mb-3 text-purple-200" />
+                <h4 className="font-semibold mb-2">Advanced Analytics</h4>
+                <p className="text-sm text-purple-100">Track scans, locations, devices, and engagement in real-time.</p>
+              </div>
+              <div className="bg-white/10 backdrop-blur-sm rounded-xl p-5 border border-white/20">
+                <Zap className="w-8 h-8 mb-3 text-purple-200" />
+                <h4 className="font-semibold mb-2">Dynamic Updates</h4>
+                <p className="text-sm text-purple-100">Change QR code content anytime without reprinting.</p>
+              </div>
+              <div className="bg-white/10 backdrop-blur-sm rounded-xl p-5 border border-white/20">
+                <Download className="w-8 h-8 mb-3 text-purple-200" />
+                <h4 className="font-semibold mb-2">Multiple Formats</h4>
+                <p className="text-sm text-purple-100">Download as PNG, SVG, PDF, or EPS for any use case.</p>
+              </div>
+              <div className="bg-white/10 backdrop-blur-sm rounded-xl p-5 border border-white/20">
+                <Shield className="w-8 h-8 mb-3 text-purple-200" />
+                <h4 className="font-semibold mb-2">Enterprise Security</h4>
+                <p className="text-sm text-purple-100">Bank-level encryption and privacy-first tracking.</p>
+              </div>
+              <div className="bg-white/10 backdrop-blur-sm rounded-xl p-5 border border-white/20">
+                <Users className="w-8 h-8 mb-3 text-purple-200" />
+                <h4 className="font-semibold mb-2">Priority Support</h4>
+                <p className="text-sm text-purple-100">Get help when you need it with dedicated support.</p>
+              </div>
+            </div>
+          </div>
+
+          {/* What's Included */}
           <div className="bg-white/80 backdrop-blur-sm border border-purple-100 rounded-2xl p-6 sm:p-8 shadow-lg mb-10">
             <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-5 space-y-4 sm:space-y-0">
               <div className="bg-purple-600/90 text-white rounded-full p-3 sm:p-4 w-fit">
@@ -298,15 +408,24 @@ export function BillingPage() {
               <div className="space-y-1">
                 <h3 className="text-lg sm:text-xl font-semibold text-purple-900">What's Included</h3>
                 <p className="text-purple-700 text-sm sm:text-base leading-relaxed">
-                  Unlimited QR codes, all types, advanced analytics, and custom branding. 
-                  All for a simple $5/month subscription.
+                  {variant === 'onetime' ? (
+                    <>
+                      Unlimited QR codes, all types, advanced analytics, and custom branding. 
+                      Pay $5 once for 30 days of full access. Continue for $5/month if you want to keep going.
+                    </>
+                  ) : (
+                    <>
+                      Unlimited QR codes, all types, advanced analytics, and custom branding. 
+                      All for a simple $5/month subscription.
+                    </>
+                  )}
                 </p>
               </div>
             </div>
           </div>
 
           <div className="space-y-6">
-            {PLANS.map((plan) => (
+            {(variant === 'onetime' ? PLANS_ONETIME : PLANS_STANDARD).map((plan) => (
               <div
                 key={plan.id}
                 className={`bg-white rounded-2xl shadow-xl overflow-hidden border border-purple-100/60 ${
@@ -315,7 +434,7 @@ export function BillingPage() {
               >
                 {plan.popular && (
                   <div className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white text-center py-2 text-xs sm:text-sm font-semibold tracking-wide uppercase">
-                    Monthly Plan
+                    {variant === 'onetime' ? 'Try It Once' : 'Monthly Plan'}
                   </div>
                 )}
                 <div className="p-6 sm:p-8">
@@ -323,13 +442,28 @@ export function BillingPage() {
                     <h3 className="text-2xl font-bold text-gray-900">{plan.name}</h3>
                     <div className="flex items-baseline space-x-2">
                       <span className="text-4xl sm:text-5xl font-bold text-gray-900">${plan.price}</span>
-                      <span className="text-gray-600 text-lg sm:text-xl">/{plan.period}</span>
+                      {variant === 'onetime' ? (
+                        <span className="text-gray-600 text-lg sm:text-xl">one-time</span>
+                      ) : (
+                        <span className="text-gray-600 text-lg sm:text-xl">/{plan.period}</span>
+                      )}
                     </div>
                     <p className="text-base sm:text-lg text-gray-700 font-medium">{plan.billing}</p>
                     <p className="text-sm text-gray-600">{plan.description}</p>
                     {plan.highlight && (
-                      <div className="bg-purple-50 text-purple-700 px-4 py-3 rounded-lg text-sm font-medium border border-purple-100 shadow-sm">
-                        {plan.highlight}
+                      <div className={`px-4 py-3 rounded-lg text-sm font-medium border shadow-sm ${
+                        variant === 'onetime' 
+                          ? 'bg-green-50 text-green-700 border-green-200' 
+                          : 'bg-purple-50 text-purple-700 border-purple-100'
+                      }`}>
+                        {variant === 'onetime' ? (
+                          <div>
+                            <div className="font-bold mb-1">✓ One-time payment - No recurring charges</div>
+                            <div className="text-xs opacity-80">After 30 days, you can choose to continue for $5/month or stop</div>
+                          </div>
+                        ) : (
+                          plan.highlight
+                        )}
                       </div>
                     )}
                   </div>
@@ -354,7 +488,7 @@ export function BillingPage() {
                         <span>Currently Subscribed</span>
                       </>
                     ) : (
-                      <span>Subscribe Now - $5/month</span>
+                      <span>{variant === 'onetime' ? 'Get Started - $5 One-Time' : 'Subscribe Now - $5/month'}</span>
                     )}
                   </button>
                 </div>

@@ -29,9 +29,45 @@ export function AuthCallbackPage() {
 
         // Check if user is authenticated
         if (data?.session?.user) {
-          // Success! Redirect to dashboard
-          console.log('OAuth login successful for user:', data.session.user.email);
-          navigate('/dashboard');
+          const user = data.session.user;
+          console.log('OAuth login successful for user:', user.email);
+          
+          // Ensure profile exists (fallback if trigger didn't fire)
+          try {
+            const { data: profileData, error: profileError } = await supabase
+              .from('profiles')
+              .select('id')
+              .eq('id', user.id)
+              .maybeSingle();
+            
+            if (!profileData && !profileError) {
+              // Profile doesn't exist, create it
+              console.log('Creating profile for user:', user.id);
+              const { error: insertError } = await supabase
+                .from('profiles')
+                .insert({
+                  id: user.id,
+                  email: user.email || '',
+                  created_at: new Date().toISOString(),
+                  updated_at: new Date().toISOString()
+                });
+              
+              if (insertError) {
+                console.error('Failed to create profile:', insertError);
+                // Don't block the flow, just log the error
+              } else {
+                console.log('Profile created successfully');
+              }
+              
+              // No trial subscription - users must subscribe to use the service
+            }
+          } catch (profileCheckError) {
+            console.error('Error checking/creating profile:', profileCheckError);
+            // Don't block the flow, continue to redirect
+          }
+          
+          // Success! Redirect to create-qr (so they can start creating immediately)
+          navigate('/create-qr');
         } else {
           // No session, redirect to login
           console.log('No session found in callback');

@@ -25,7 +25,8 @@ export function LoginPage() {
     try {
       const { error } = await signIn(email, password);
       if (error) throw error;
-      navigate('/dashboard');
+      // Redirect to create-qr so users can start creating immediately
+      navigate('/create-qr');
     } catch (err: any) {
       setError(err.message || 'Failed to sign in');
     } finally {
@@ -62,6 +63,21 @@ export function LoginPage() {
               {error}
             </div>
           )}
+
+          {/* Google Sign In - Top */}
+          <button
+            onClick={handleGoogleSignIn}
+            className="w-full bg-white hover:bg-gray-100 text-gray-800 font-semibold py-3 rounded-lg transition flex items-center justify-center space-x-2 mb-6"
+          >
+            <Chrome className="w-5 h-5" />
+            <span>Continue with Google</span>
+          </button>
+
+          <div className="my-6 flex items-center">
+            <div className="flex-1 border-t border-white/30"></div>
+            <span className="px-4 text-gray-400 text-sm">OR</span>
+            <div className="flex-1 border-t border-white/30"></div>
+          </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
@@ -112,20 +128,6 @@ export function LoginPage() {
               {loading ? 'Signing in...' : 'Sign In'}
             </button>
           </form>
-
-          <div className="my-6 flex items-center">
-            <div className="flex-1 border-t border-white/30"></div>
-            <span className="px-4 text-gray-400 text-sm">OR</span>
-            <div className="flex-1 border-t border-white/30"></div>
-          </div>
-
-          <button
-            onClick={handleGoogleSignIn}
-            className="w-full bg-white hover:bg-gray-100 text-gray-800 font-semibold py-3 rounded-lg transition flex items-center justify-center space-x-2"
-          >
-            <Chrome className="w-5 h-5" />
-            <span>Continue with Google</span>
-          </button>
 
           <p className="text-center text-gray-300 mt-6">
             Don't have an account?{' '}
