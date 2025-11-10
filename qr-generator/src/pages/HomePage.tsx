@@ -1954,8 +1954,8 @@ function VariantLanding({ variantKey, copy, config }: VariantLandingProps) {
             </section>
           )}
 
-          {/* Inline QR Builder for page1 and page6 */}
-          {(variantKey === 'page1' || variantKey === 'page6') && <InlineQRBuilder config={config} />}
+          {/* Inline QR Builder for page1, page2, and page6 */}
+          {(variantKey === 'page1' || variantKey === 'page2' || variantKey === 'page6') && <InlineQRBuilder config={config} />}
 
           <section className="py-12 md:py-16">
             <div className={`mb-8 flex items-center gap-3 text-sm font-semibold ${config.theme.subtext}`}>
