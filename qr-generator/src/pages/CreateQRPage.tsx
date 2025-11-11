@@ -345,6 +345,9 @@ export function CreateQRPage() {
     setError('');
 
     try {
+      // Check subscription status before creating QR code
+      const subscriptionStatus = await checkSubscriptionStatus(user.id);
+      
       // Always create QR code, even without subscription
       const result = await createQRCode(
         user.id,
@@ -367,9 +370,16 @@ export function CreateQRPage() {
         console.error('Error generating QR preview:', err);
       }
       
-      // Always show step 3 (paywall if no subscription, success message if has subscription)
-      setShowPaywall(true);
-      setStep(3);
+      // If user has active subscription, show success and redirect to dashboard
+      if (subscriptionStatus.canCreateQR && subscriptionStatus.hasActiveSubscription) {
+        // QR code created successfully with active subscription
+        // Show success message and redirect to dashboard
+        navigate('/dashboard?created=true');
+      } else {
+        // No subscription - show paywall
+        setShowPaywall(true);
+        setStep(3);
+      }
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Failed to create QR code. Please try again.');
       console.error('QR creation error:', err);
