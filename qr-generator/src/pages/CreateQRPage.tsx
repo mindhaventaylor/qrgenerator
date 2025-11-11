@@ -787,7 +787,10 @@ export function CreateQRPage() {
                   <label className="block text-sm font-medium text-gray-700 mb-2">App Store</label>
                   <select
                     value={content.store || 'ios'}
-                    onChange={(e) => setContent({ ...content, store: e.target.value })}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      setContent({ ...content, store: (value === 'ios' || value === 'android') ? value : 'ios' });
+                    }}
                     className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
                   >
                     <option value="ios">Apple App Store</option>
