@@ -232,8 +232,8 @@ const landingVariantConfigs: Record<Exclude<LandingVariantKey, 'control'>, Varia
       badge: 'bg-slate-700 border border-slate-500',
       badgeText: 'text-white',
       navText: 'text-white',
-      primaryButton: 'bg-emerald-400 text-slate-900',
-      primaryButtonHover: 'hover:bg-emerald-300',
+      primaryButton: 'bg-cyan-400 text-slate-900',
+      primaryButtonHover: 'hover:bg-cyan-300',
       secondaryButton: 'bg-transparent text-white border border-white/30',
       secondaryButtonHover: 'hover:bg-white/10',
       card: 'bg-slate-900/80 border border-white/10',
@@ -242,7 +242,7 @@ const landingVariantConfigs: Record<Exclude<LandingVariantKey, 'control'>, Varia
       sectionBorder: 'border-white/10'
     },
     hero: {
-      layout: 'stacked',
+      layout: 'reverse',
       supporting: 'Build your QR code right here. No signup needed until you want to save it.',
       stats: [
         { label: 'Build time', value: '< 2 min', helper: 'From start to preview' },
@@ -303,8 +303,8 @@ const landingVariantConfigs: Record<Exclude<LandingVariantKey, 'control'>, Varia
       badge: 'bg-slate-700 border border-slate-500',
       badgeText: 'text-white',
       navText: 'text-white',
-      primaryButton: 'bg-pink-400 text-slate-900',
-      primaryButtonHover: 'hover:bg-pink-300',
+      primaryButton: 'bg-cyan-400 text-slate-900',
+      primaryButtonHover: 'hover:bg-cyan-300',
       secondaryButton: 'bg-transparent text-white border border-white/30',
       secondaryButtonHover: 'hover:bg-white/10',
       card: 'bg-slate-900/80 border border-white/10',
@@ -313,7 +313,7 @@ const landingVariantConfigs: Record<Exclude<LandingVariantKey, 'control'>, Varia
       sectionBorder: 'border-white/10'
     },
     hero: {
-      layout: 'stacked',
+      layout: 'reverse',
       supporting: 'Build your QR code right here. No signup needed until you want to save it.',
       stats: [
         { label: 'Build time', value: '< 2 min', helper: 'From start to preview' },
@@ -374,8 +374,8 @@ const landingVariantConfigs: Record<Exclude<LandingVariantKey, 'control'>, Varia
       badge: 'bg-slate-700 border border-slate-500',
       badgeText: 'text-white',
       navText: 'text-white',
-      primaryButton: 'bg-slate-400 text-slate-900',
-      primaryButtonHover: 'hover:bg-slate-300',
+      primaryButton: 'bg-cyan-400 text-slate-900',
+      primaryButtonHover: 'hover:bg-cyan-300',
       secondaryButton: 'bg-transparent text-white border border-white/30',
       secondaryButtonHover: 'hover:bg-white/10',
       card: 'bg-slate-900/80 border border-white/10',
@@ -445,8 +445,8 @@ const landingVariantConfigs: Record<Exclude<LandingVariantKey, 'control'>, Varia
       badge: 'bg-slate-700 border border-slate-500',
       badgeText: 'text-white',
       navText: 'text-white',
-      primaryButton: 'bg-amber-400 text-slate-900',
-      primaryButtonHover: 'hover:bg-amber-300',
+      primaryButton: 'bg-cyan-400 text-slate-900',
+      primaryButtonHover: 'hover:bg-cyan-300',
       secondaryButton: 'bg-transparent text-white border border-white/30',
       secondaryButtonHover: 'hover:bg-white/10',
       card: 'bg-slate-900/80 border border-white/10',
@@ -587,8 +587,8 @@ const landingVariantConfigs: Record<Exclude<LandingVariantKey, 'control'>, Varia
       badge: 'bg-slate-700 border border-slate-500',
       badgeText: 'text-white',
       navText: 'text-white',
-      primaryButton: 'bg-emerald-400 text-slate-900',
-      primaryButtonHover: 'hover:bg-emerald-300',
+      primaryButton: 'bg-cyan-400 text-slate-900',
+      primaryButtonHover: 'hover:bg-cyan-300',
       secondaryButton: 'bg-transparent text-white border border-white/30',
       secondaryButtonHover: 'hover:bg-white/10',
       card: 'bg-slate-900/80 border border-white/10',
@@ -597,7 +597,7 @@ const landingVariantConfigs: Record<Exclude<LandingVariantKey, 'control'>, Varia
       sectionBorder: 'border-white/10'
     },
     hero: {
-      layout: 'stacked',
+      layout: 'reverse',
       supporting: 'Build your QR code right here. No signup needed until you want to save it.',
       stats: [
         { label: 'Build time', value: '< 2 min', helper: 'From start to preview' },
@@ -1817,12 +1817,7 @@ function VariantLanding({ variantKey, copy, config }: VariantLandingProps) {
 
   const renderFeatureCard = (feature: VariantFeature) => {
     const Icon = ICON_MAP[feature.icon];
-    const iconBg =
-      variantKey === 'page3'
-        ? 'bg-slate-900 text-white'
-        : variantKey === 'page1'
-          ? 'bg-emerald-100 text-emerald-700'
-          : 'bg-white/10 text-white';
+    const iconBg = 'bg-white/10 text-white';
 
     return (
       <Link
@@ -1845,12 +1840,8 @@ function VariantLanding({ variantKey, copy, config }: VariantLandingProps) {
   return (
     <div className={`${config.theme.wrapper}`}>
       <div className="relative">
-        {variantKey === 'page2' && (
-          <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(255,255,255,0.08),_transparent_55%)]" />
-        )}
-        {variantKey === 'page5' && (
-          <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_center,_rgba(56,189,248,0.08),_transparent_60%)]" />
-        )}
+        {/* Apply page5 radial gradient to all variants */}
+        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_center,_rgba(56,189,248,0.08),_transparent_60%)]" />
 
         <div className="relative z-10 mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
           <nav className="flex items-center justify-between py-6">
@@ -1859,11 +1850,10 @@ function VariantLanding({ variantKey, copy, config }: VariantLandingProps) {
               <span className="text-xl font-semibold tracking-tight">generatecodeqr</span>
             </div>
             <div className="hidden md:flex items-center gap-6">
-              {!['page1', 'page2', 'page3', 'page4'].includes(variantKey) && (
-                <Link to="/faq" className={`text-sm transition ${config.theme.subtext} hover:opacity-80`}>
-                  FAQ
-                </Link>
-              )}
+              {/* Show FAQ link for all variants (like page5) */}
+              <Link to="/faq" className={`text-sm transition ${config.theme.subtext} hover:opacity-80`}>
+                FAQ
+              </Link>
               <Link to="/login" className={`text-sm transition ${config.theme.subtext} hover:opacity-80`}>
                 Log In
               </Link>
@@ -1876,9 +1866,8 @@ function VariantLanding({ variantKey, copy, config }: VariantLandingProps) {
             </div>
           </nav>
 
-          {/* Hero section - skip for page2 */}
-          {variantKey !== 'page2' && (
-            <section className="py-16 md:py-24">
+          {/* Hero section - show for all variants */}
+          <section className="py-16 md:py-24">
               {config.hero.layout === 'stacked' ? (
                 <div className="mx-auto max-w-3xl text-center space-y-8">
                   <Link
@@ -1963,29 +1952,6 @@ function VariantLanding({ variantKey, copy, config }: VariantLandingProps) {
                 </div>
               )}
             </section>
-          )}
-
-          {/* Prominent CTA for page1 and page2 - page2 shows this at the top */}
-          {(variantKey === 'page1' || variantKey === 'page2') && (
-            <section className={variantKey === 'page2' ? 'py-16 md:py-20' : 'py-8 md:py-12'}>
-              <div className="text-center">
-                <Link
-                  to={copy.primaryCtaHref}
-                  className={`inline-flex items-center justify-center gap-3 rounded-full px-10 py-5 text-lg font-bold transition transform hover:scale-105 shadow-2xl ${config.theme.primaryButton} ${config.theme.primaryButtonHover}`}
-                >
-                  <QrCode className="h-6 w-6" />
-                  Build your QR code now
-                  <ArrowRight className="h-6 w-6" />
-                </Link>
-                <p className={`mt-4 text-sm ${config.theme.subtext}`}>
-                  No signup required • Try it free • See it work instantly
-                </p>
-              </div>
-            </section>
-          )}
-
-          {/* Inline QR Builder for page1, page2, and page6 */}
-          {(variantKey === 'page1' || variantKey === 'page2' || variantKey === 'page6') && <InlineQRBuilder config={config} />}
 
           <section className="py-12 md:py-16">
             <div className={`mb-8 flex items-center gap-3 text-sm font-semibold ${config.theme.subtext}`}>

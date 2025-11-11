@@ -4,7 +4,9 @@ import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
 import { createCheckoutSession, createPortalSession } from '../lib/stripe';
 import { useSEO } from '../hooks/useSEO';
-import { Check, Loader2, Calendar, Settings, BarChart3, TrendingUp, Users, Zap, Shield, Globe, Download } from 'lucide-react';
+import { getLandingVariantOrDefault } from '../utils/variantUtils';
+import { billingVariants } from '../utils/billingVariants';
+import { Check, Loader2, Calendar, Settings, BarChart3, TrendingUp, Users, Zap, Shield, Globe, Download, CreditCard, QrCode, Palette, Ticket } from 'lucide-react';
 
 const PLANS_STANDARD = [
   {
@@ -58,8 +60,46 @@ export function BillingPage() {
   
   // Get variant from URL (default to 'standard', test with ?variant=onetime)
   const variant = searchParams.get('variant') || 'standard';
+  
+  // Get landing page variant from cookie to apply premium theme and billing design
+  // Always read fresh from cookie on each render to avoid stale cache
+  const [landingVariant, setLandingVariant] = useState<ReturnType<typeof getLandingVariantOrDefault>>(() => getLandingVariantOrDefault());
+  const usePremiumTheme = landingVariant !== 'control';
+  const billingConfig = billingVariants[landingVariant];
+  
+  // Icon mapping for billing features
+  const getBillingIcon = (iconName: string) => {
+    switch (iconName) {
+      case 'qr': return QrCode;
+      case 'palette': return Palette;
+      case 'analytics': return BarChart3;
+      case 'settings': return Settings;
+      case 'shield': return Shield;
+      case 'zap': return Zap;
+      case 'download': return Download;
+      case 'globe': return Globe;
+      case 'users': return Users;
+      default: return Check;
+    }
+  };
+  
+  // Hero icon mapping
+  const getHeroIcon = (iconName: string) => {
+    switch (iconName) {
+      case 'check': return Check;
+      case 'zap': return Zap;
+      case 'palette': return Palette;
+      case 'ticket': return Ticket;
+      case 'bar-chart': return BarChart3;
+      case 'credit-card': return CreditCard;
+      default: return CreditCard;
+    }
+  };
 
   useEffect(() => {
+    // Always refresh variant from cookie when component mounts or when page becomes visible
+    setLandingVariant(getLandingVariantOrDefault());
+    
     loadSubscription();
     
     // Check for success or canceled query params
@@ -76,6 +116,32 @@ export function BillingPage() {
         }, delay);
       });
     }
+    
+    // Detect when page is shown again (e.g., back button from Stripe)
+    const handlePageShow = (e: PageTransitionEvent) => {
+      // If page was restored from cache (back/forward navigation)
+      if (e.persisted) {
+        // Force refresh variant and subscription
+        setLandingVariant(getLandingVariantOrDefault());
+        loadSubscription();
+      }
+    };
+    
+    // Detect when page becomes visible again
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        setLandingVariant(getLandingVariantOrDefault());
+        loadSubscription();
+      }
+    };
+    
+    window.addEventListener('pageshow', handlePageShow);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    
+    return () => {
+      window.removeEventListener('pageshow', handlePageShow);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
   }, [user, searchParams]);
 
   // Track Google Ads conversion immediately when payment success page loads
@@ -261,27 +327,55 @@ export function BillingPage() {
 
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-50 via-white to-purple-50">
-      <div className="container mx-auto px-4 sm:px-6 py-8 sm:py-12">
+    <div className={`min-h-screen ${usePremiumTheme 
+      ? 'bg-gradient-to-br from-slate-950 via-slate-900 to-slate-800 text-white' 
+      : 'bg-gradient-to-b from-gray-50 via-white to-purple-50 text-gray-900'
+    }`}>
+      {usePremiumTheme && (
+        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_center,_rgba(56,189,248,0.08),_transparent_60%)]" />
+      )}
+      <div className="container mx-auto px-4 sm:px-6 py-8 sm:py-12 relative">
         <div className="max-w-5xl mx-auto">
-          <Link
-            to="/dashboard"
-            className="text-purple-600 hover:text-purple-700 mb-6 inline-flex items-center text-sm font-medium tracking-wide"
+            <Link
+            to="/dashboard?from=billing"
+            className={`mb-6 inline-flex items-center text-sm font-medium tracking-wide ${
+              usePremiumTheme 
+                ? 'text-cyan-400 hover:text-cyan-300'
+                : 'text-purple-600 hover:text-purple-700'
+            }`}
           >
             ← Back to Dashboard
           </Link>
-          <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-3 sm:mb-4 text-balance">
-            {variant === 'onetime' ? 'Get Started - One Month Access' : 'Subscription & Billing'}
-          </h1>
-          <p className="text-gray-600 text-base sm:text-lg mb-8 sm:mb-10 max-w-3xl text-pretty">
-            {variant === 'onetime' 
-              ? 'Pay $5 once for full access to analytics and QR code creation for 30 days. Continue for $5/month if you want to keep going—or stop anytime.'
-              : 'Simple, transparent pricing at $5/month. Cancel anytime.'}
-          </p>
+          
+          {/* Hero Section */}
+          <div className="text-center mb-8 sm:mb-10">
+            <div className={`inline-flex items-center justify-center w-16 h-16 sm:w-20 sm:h-20 rounded-full mb-4 bg-gradient-to-br ${billingConfig.heroIconBg}`}>
+              {(() => {
+                const HeroIcon = getHeroIcon(billingConfig.heroIcon);
+                return <HeroIcon className="w-8 h-8 sm:w-10 sm:h-10 text-white" />;
+              })()}
+            </div>
+            <h1 className={`text-3xl sm:text-4xl font-bold mb-3 sm:mb-4 text-balance ${
+              usePremiumTheme ? 'text-white' : 'text-gray-900'
+            }`}>
+              {variant === 'onetime' ? 'Get Started - One Month Access' : billingConfig.heroTitle}
+            </h1>
+            <p className={`text-base sm:text-lg mb-8 sm:mb-10 max-w-3xl mx-auto text-pretty ${
+              usePremiumTheme ? 'text-white/70' : 'text-gray-600'
+            }`}>
+              {variant === 'onetime' 
+                ? 'Pay $5 once for full access to analytics and QR code creation for 30 days. Continue for $5/month if you want to keep going—or stop anytime.'
+                : billingConfig.heroDescription}
+            </p>
+          </div>
 
           {/* Success Message */}
           {searchParams.get('success') && (
-            <div className="bg-green-50 border border-green-200 text-green-700 px-6 py-4 rounded-lg mb-6">
+            <div className={`px-6 py-4 rounded-lg mb-6 ${
+              usePremiumTheme 
+                ? 'bg-green-900/50 border border-green-500/50 text-green-300' 
+                : 'bg-green-50 border border-green-200 text-green-700'
+            }`}>
               <p className="font-semibold mb-2">Payment successful!</p>
               <p className="text-sm">
                 {subscription?.status === 'active' 
@@ -291,7 +385,9 @@ export function BillingPage() {
               {subscription?.status !== 'active' && (
                 <button
                   onClick={loadSubscription}
-                  className="mt-2 text-sm underline hover:no-underline"
+                  className={`mt-2 text-sm underline hover:no-underline ${
+                    usePremiumTheme ? 'text-green-200' : ''
+                  }`}
                 >
                   Refresh Status
                 </button>
@@ -301,29 +397,180 @@ export function BillingPage() {
 
           {/* Canceled Message */}
           {searchParams.get('canceled') && (
-            <div className="bg-yellow-50 border border-yellow-200 text-yellow-700 px-6 py-4 rounded-lg mb-6">
+            <div className={`px-6 py-4 rounded-lg mb-6 ${
+              usePremiumTheme 
+                ? 'bg-yellow-900/50 border border-yellow-500/50 text-yellow-300' 
+                : 'bg-yellow-50 border border-yellow-200 text-yellow-700'
+            }`}>
               <p>Checkout was canceled. You can try again anytime.</p>
             </div>
           )}
 
+          {/* Pricing Card First (for some variants) */}
+          {billingConfig.pricingFirst && (
+            <>
+              {/* What's Included - Compact version when pricing is first */}
+              <div className={`backdrop-blur-sm rounded-2xl p-6 sm:p-8 shadow-lg mb-6 ${
+                usePremiumTheme 
+                  ? 'bg-slate-900/80 border border-white/10' 
+                  : 'bg-white/80 border border-purple-100'
+              }`}>
+                <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-5 space-y-4 sm:space-y-0">
+                  <div className={`rounded-full p-3 sm:p-4 w-fit bg-gradient-to-br ${billingConfig.heroIconBg} text-white`}>
+                    <Check className="w-5 h-5 sm:w-6 sm:h-6" />
+                  </div>
+                  <div className="space-y-1">
+                    <h3 className={`text-lg sm:text-xl font-semibold ${
+                      usePremiumTheme ? 'text-white' : 'text-purple-900'
+                    }`}>
+                      What's Included
+                    </h3>
+                    <p className={`text-sm sm:text-base leading-relaxed ${
+                      usePremiumTheme ? 'text-white/70' : 'text-purple-700'
+                    }`}>
+                      {variant === 'onetime' ? (
+                        <>
+                          Unlimited QR codes, all types, advanced analytics, and custom branding. 
+                          Pay $5 once for 30 days of full access. Continue for $5/month if you want to keep going.
+                        </>
+                      ) : (
+                        <>
+                          Unlimited QR codes, all types, advanced analytics, and custom branding. 
+                          All for a simple $5/month subscription.
+                        </>
+                      )}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Pricing Card */}
+              <div className="space-y-6 mb-10">
+                {(variant === 'onetime' ? PLANS_ONETIME : PLANS_STANDARD).map((plan) => (
+                  <div
+                    key={plan.id}
+                    className={`rounded-2xl shadow-xl overflow-hidden ${
+                      usePremiumTheme 
+                        ? `${billingConfig.pricingCardBg} ${billingConfig.pricingCardBorder} ${plan.popular ? `ring-2 ${billingConfig.accentColor.replace('text-', 'ring-')}` : ''}`
+                        : `bg-white border border-purple-100/60 ${plan.popular ? 'ring-2 ring-purple-600' : ''}`
+                    }`}
+                  >
+                    {plan.popular && (
+                      <div className={`text-white text-center py-2 text-xs sm:text-sm font-semibold tracking-wide uppercase ${
+                        usePremiumTheme 
+                          ? `bg-gradient-to-r ${billingConfig.ctaButtonBg.split(' ').filter(c => c.startsWith('from-') || c.startsWith('to-')).join(' ')}` 
+                          : 'bg-gradient-to-r from-purple-600 to-indigo-600'
+                      }`}>
+                        {variant === 'onetime' ? 'Try It Once' : billingConfig.pricingTitle}
+                      </div>
+                    )}
+                    <div className="p-6 sm:p-8">
+                      <div className="space-y-4">
+                        <h3 className={`text-2xl font-bold ${
+                          usePremiumTheme ? 'text-white' : 'text-gray-900'
+                        }`}>
+                          {plan.name}
+                        </h3>
+                        <div className="flex items-baseline space-x-2">
+                          <span className={`text-4xl sm:text-5xl font-bold ${
+                            usePremiumTheme ? 'text-white' : 'text-gray-900'
+                          }`}>
+                            ${plan.price}
+                          </span>
+                          <span className={`text-lg sm:text-xl ${
+                            usePremiumTheme ? 'text-white/70' : 'text-gray-600'
+                          }`}>
+                            {variant === 'onetime' ? 'one-time' : `/${plan.period}`}
+                          </span>
+                        </div>
+                        <p className={`text-base sm:text-lg font-medium ${
+                          usePremiumTheme ? 'text-white/90' : 'text-gray-700'
+                        }`}>
+                          {plan.billing}
+                        </p>
+                        <p className={`text-sm ${
+                          usePremiumTheme ? 'text-white/70' : 'text-gray-600'
+                        }`}>
+                          {plan.description}
+                        </p>
+                        {plan.highlight && (
+                          <div className={`px-4 py-3 rounded-lg text-sm font-medium border shadow-sm ${
+                            usePremiumTheme 
+                              ? variant === 'onetime'
+                                ? 'bg-green-900/50 text-green-300 border-green-500/50'
+                                : `${billingConfig.pricingCardBg} ${billingConfig.accentColor} ${billingConfig.pricingCardBorder}`
+                              : variant === 'onetime' 
+                                ? 'bg-green-50 text-green-700 border-green-200' 
+                                : 'bg-purple-50 text-purple-700 border-purple-100'
+                          }`}>
+                            {variant === 'onetime' ? (
+                              <div>
+                                <div className="font-bold mb-1">✓ One-time payment - No recurring charges</div>
+                                <div className={`text-xs ${usePremiumTheme ? 'opacity-80' : 'opacity-80'}`}>
+                                  After 30 days, you can choose to continue for $5/month or stop
+                                </div>
+                              </div>
+                            ) : (
+                              <span className={usePremiumTheme ? billingConfig.accentColor : ''}>
+                                {billingConfig.pricingDescription}
+                              </span>
+                            )}
+                          </div>
+                        )}
+                      </div>
+
+                      <button
+                        onClick={handleSubscribe}
+                        disabled={processing || subscription?.status === 'active'}
+                        className={`w-full mt-6 py-3.5 rounded-xl font-semibold text-base sm:text-lg transition flex items-center justify-center space-x-2 shadow ${
+                          plan.popular
+                            ? usePremiumTheme
+                              ? `bg-gradient-to-r ${billingConfig.ctaButtonBg} text-slate-900 disabled:opacity-50 disabled:cursor-not-allowed`
+                              : 'bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white disabled:from-purple-400 disabled:to-indigo-400 disabled:cursor-not-allowed'
+                            : usePremiumTheme
+                              ? 'bg-slate-800 hover:bg-slate-700 text-white disabled:bg-slate-800 disabled:cursor-not-allowed'
+                              : 'bg-gray-100 hover:bg-gray-200 text-gray-800 disabled:bg-gray-200 disabled:cursor-not-allowed'
+                        }`}
+                      >
+                        {processing ? (
+                          <>
+                            <Loader2 className="w-5 h-5 animate-spin" />
+                            <span>Processing...</span>
+                          </>
+                        ) : subscription?.plan_type === plan.id && subscription?.status === 'active' ? (
+                          <>
+                            <Check className="w-5 h-5" />
+                            <span>Currently Subscribed</span>
+                          </>
+                        ) : (
+                          <span>{variant === 'onetime' ? 'Get Started - $5 One-Time' : billingConfig.ctaLabel}</span>
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
 
           {/* Visual Benefits Section */}
-          <div className="bg-gradient-to-br from-purple-600 via-indigo-600 to-purple-700 rounded-3xl p-8 sm:p-12 mb-10 text-white shadow-2xl">
+          <div className={`bg-gradient-to-br ${billingConfig.benefitsBg} rounded-3xl p-8 sm:p-12 mb-10 text-white shadow-2xl`}>
             <div className="text-center mb-8">
-              <h2 className="text-3xl sm:text-4xl font-bold mb-4">Everything You Get</h2>
-              <p className="text-purple-100 text-lg max-w-2xl mx-auto">
+              <h2 className="text-3xl sm:text-4xl font-bold mb-4">{billingConfig.benefitsTitle}</h2>
+              <p className="text-white/80 text-lg max-w-2xl mx-auto">
                 {variant === 'onetime'
                   ? 'See exactly what your $5 unlocks—powerful analytics, unlimited QR codes, and professional features for 30 days.'
-                  : 'See exactly what your $5/month unlocks—powerful analytics, unlimited QR codes, and professional features.'}
+                  : billingConfig.benefitsDescription}
               </p>
             </div>
 
             {/* Dashboard Preview */}
-            <div className="bg-white/10 backdrop-blur-md rounded-2xl p-6 sm:p-8 mb-8 border border-white/20">
-              <div className="flex items-center gap-3 mb-6">
-                <BarChart3 className="w-6 h-6" />
-                <h3 className="text-xl font-semibold">Real-Time Analytics Dashboard</h3>
-              </div>
+            {billingConfig.showDashboardPreview !== false && (
+              <div className="bg-white/10 backdrop-blur-md rounded-2xl p-6 sm:p-8 mb-8 border border-white/20">
+                <div className="flex items-center gap-3 mb-6">
+                  <BarChart3 className="w-6 h-6" />
+                  <h3 className="text-xl font-semibold">{billingConfig.dashboardPreviewTitle || 'Real-Time Analytics Dashboard'}</h3>
+                </div>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
                 <div className="bg-white/10 rounded-xl p-4 border border-white/20">
                   <div className="text-3xl font-bold mb-1">12.4K</div>
@@ -363,146 +610,194 @@ export function BillingPage() {
                 <div className="mt-2 text-xs text-purple-200">3,240 scans in the last 30 days</div>
               </div>
             </div>
+            )}
 
             {/* Feature Grid */}
             <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              <div className="bg-white/10 backdrop-blur-sm rounded-xl p-5 border border-white/20">
-                <Globe className="w-8 h-8 mb-3 text-purple-200" />
-                <h4 className="font-semibold mb-2">Unlimited QR Codes</h4>
-                <p className="text-sm text-purple-100">Create as many QR codes as you need. No limits, no restrictions.</p>
-              </div>
-              <div className="bg-white/10 backdrop-blur-sm rounded-xl p-5 border border-white/20">
-                <BarChart3 className="w-8 h-8 mb-3 text-purple-200" />
-                <h4 className="font-semibold mb-2">Advanced Analytics</h4>
-                <p className="text-sm text-purple-100">Track scans, locations, devices, and engagement in real-time.</p>
-              </div>
-              <div className="bg-white/10 backdrop-blur-sm rounded-xl p-5 border border-white/20">
-                <Zap className="w-8 h-8 mb-3 text-purple-200" />
-                <h4 className="font-semibold mb-2">Dynamic Updates</h4>
-                <p className="text-sm text-purple-100">Change QR code content anytime without reprinting.</p>
-              </div>
-              <div className="bg-white/10 backdrop-blur-sm rounded-xl p-5 border border-white/20">
-                <Download className="w-8 h-8 mb-3 text-purple-200" />
-                <h4 className="font-semibold mb-2">Multiple Formats</h4>
-                <p className="text-sm text-purple-100">Download as PNG, SVG, PDF, or EPS for any use case.</p>
-              </div>
-              <div className="bg-white/10 backdrop-blur-sm rounded-xl p-5 border border-white/20">
-                <Shield className="w-8 h-8 mb-3 text-purple-200" />
-                <h4 className="font-semibold mb-2">Enterprise Security</h4>
-                <p className="text-sm text-purple-100">Bank-level encryption and privacy-first tracking.</p>
-              </div>
-              <div className="bg-white/10 backdrop-blur-sm rounded-xl p-5 border border-white/20">
-                <Users className="w-8 h-8 mb-3 text-purple-200" />
-                <h4 className="font-semibold mb-2">Priority Support</h4>
-                <p className="text-sm text-purple-100">Get help when you need it with dedicated support.</p>
-              </div>
+              {billingConfig.features.map((feature, index) => {
+                const FeatureIcon = getBillingIcon(feature.icon);
+                return (
+                  <div key={index} className="bg-white/10 backdrop-blur-sm rounded-xl p-5 border border-white/20">
+                    <FeatureIcon className="w-8 h-8 mb-3 text-white/90" />
+                    <h4 className="font-semibold mb-2">{feature.title}</h4>
+                    <p className="text-sm text-white/80">{feature.description}</p>
+                  </div>
+                );
+              })}
             </div>
           </div>
 
-          {/* What's Included */}
-          <div className="bg-white/80 backdrop-blur-sm border border-purple-100 rounded-2xl p-6 sm:p-8 shadow-lg mb-10">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-5 space-y-4 sm:space-y-0">
-              <div className="bg-purple-600/90 text-white rounded-full p-3 sm:p-4 w-fit">
-                <Check className="w-5 h-5 sm:w-6 sm:h-6" />
-              </div>
-              <div className="space-y-1">
-                <h3 className="text-lg sm:text-xl font-semibold text-purple-900">What's Included</h3>
-                <p className="text-purple-700 text-sm sm:text-base leading-relaxed">
-                  {variant === 'onetime' ? (
-                    <>
-                      Unlimited QR codes, all types, advanced analytics, and custom branding. 
-                      Pay $5 once for 30 days of full access. Continue for $5/month if you want to keep going.
-                    </>
-                  ) : (
-                    <>
-                      Unlimited QR codes, all types, advanced analytics, and custom branding. 
-                      All for a simple $5/month subscription.
-                    </>
-                  )}
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <div className="space-y-6">
-            {(variant === 'onetime' ? PLANS_ONETIME : PLANS_STANDARD).map((plan) => (
-              <div
-                key={plan.id}
-                className={`bg-white rounded-2xl shadow-xl overflow-hidden border border-purple-100/60 ${
-                  plan.popular ? 'ring-2 ring-purple-600' : ''
-                }`}
-              >
-                {plan.popular && (
-                  <div className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white text-center py-2 text-xs sm:text-sm font-semibold tracking-wide uppercase">
-                    {variant === 'onetime' ? 'Try It Once' : 'Monthly Plan'}
-                  </div>
-                )}
-                <div className="p-6 sm:p-8">
-                  <div className="space-y-4">
-                    <h3 className="text-2xl font-bold text-gray-900">{plan.name}</h3>
-                    <div className="flex items-baseline space-x-2">
-                      <span className="text-4xl sm:text-5xl font-bold text-gray-900">${plan.price}</span>
-                      {variant === 'onetime' ? (
-                        <span className="text-gray-600 text-lg sm:text-xl">one-time</span>
-                      ) : (
-                        <span className="text-gray-600 text-lg sm:text-xl">/{plan.period}</span>
-                      )}
-                    </div>
-                    <p className="text-base sm:text-lg text-gray-700 font-medium">{plan.billing}</p>
-                    <p className="text-sm text-gray-600">{plan.description}</p>
-                    {plan.highlight && (
-                      <div className={`px-4 py-3 rounded-lg text-sm font-medium border shadow-sm ${
-                        variant === 'onetime' 
-                          ? 'bg-green-50 text-green-700 border-green-200' 
-                          : 'bg-purple-50 text-purple-700 border-purple-100'
-                      }`}>
-                        {variant === 'onetime' ? (
-                          <div>
-                            <div className="font-bold mb-1">✓ One-time payment - No recurring charges</div>
-                            <div className="text-xs opacity-80">After 30 days, you can choose to continue for $5/month or stop</div>
-                          </div>
-                        ) : (
-                          plan.highlight
-                        )}
-                      </div>
-                    )}
-                  </div>
-
-                  <button
-                    onClick={handleSubscribe}
-                    disabled={processing || subscription?.status === 'active'}
-                    className={`w-full mt-6 py-3.5 rounded-xl font-semibold text-base sm:text-lg transition flex items-center justify-center space-x-2 shadow ${
-                      plan.popular
-                        ? 'bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white disabled:from-purple-400 disabled:to-indigo-400 disabled:cursor-not-allowed'
-                        : 'bg-gray-100 hover:bg-gray-200 text-gray-800 disabled:bg-gray-200 disabled:cursor-not-allowed'
-                    }`}
-                  >
-                    {processing ? (
+          {/* What's Included (only show if pricing is NOT first) */}
+          {!billingConfig.pricingFirst && (
+            <div className={`backdrop-blur-sm rounded-2xl p-6 sm:p-8 shadow-lg mb-10 ${
+              usePremiumTheme 
+                ? 'bg-slate-900/80 border border-white/10' 
+                : 'bg-white/80 border border-purple-100'
+            }`}>
+              <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-5 space-y-4 sm:space-y-0">
+                <div className={`rounded-full p-3 sm:p-4 w-fit bg-gradient-to-br ${billingConfig.heroIconBg} text-white`}>
+                  <Check className="w-5 h-5 sm:w-6 sm:h-6" />
+                </div>
+                <div className="space-y-1">
+                  <h3 className={`text-lg sm:text-xl font-semibold ${
+                    usePremiumTheme ? 'text-white' : 'text-purple-900'
+                  }`}>
+                    What's Included
+                  </h3>
+                  <p className={`text-sm sm:text-base leading-relaxed ${
+                    usePremiumTheme ? 'text-white/70' : 'text-purple-700'
+                  }`}>
+                    {variant === 'onetime' ? (
                       <>
-                        <Loader2 className="w-5 h-5 animate-spin" />
-                        <span>Processing...</span>
-                      </>
-                    ) : subscription?.plan_type === plan.id && subscription?.status === 'active' ? (
-                      <>
-                        <Check className="w-5 h-5" />
-                        <span>Currently Subscribed</span>
+                        Unlimited QR codes, all types, advanced analytics, and custom branding. 
+                        Pay $5 once for 30 days of full access. Continue for $5/month if you want to keep going.
                       </>
                     ) : (
-                      <span>{variant === 'onetime' ? 'Get Started - $5 One-Time' : 'Subscribe Now - $5/month'}</span>
+                      <>
+                        Unlimited QR codes, all types, advanced analytics, and custom branding. 
+                        All for a simple $5/month subscription.
+                      </>
                     )}
-                  </button>
+                  </p>
                 </div>
               </div>
-            ))}
-          </div>
+            </div>
+          )}
 
-          <div className="bg-white rounded-2xl shadow-lg p-6 sm:p-8 mt-10 border border-purple-100/60">
-            <h2 className="text-2xl font-bold text-gray-900 mb-6 text-balance">All Plans Include</h2>
+          {/* Pricing Card (only show if NOT pricingFirst) */}
+          {!billingConfig.pricingFirst && (
+            <div className="space-y-6">
+              {(variant === 'onetime' ? PLANS_ONETIME : PLANS_STANDARD).map((plan) => (
+                <div
+                  key={plan.id}
+                  className={`rounded-2xl shadow-xl overflow-hidden ${
+                    usePremiumTheme 
+                      ? `${billingConfig.pricingCardBg} ${billingConfig.pricingCardBorder} ${plan.popular ? `ring-2 ${billingConfig.accentColor.replace('text-', 'ring-')}` : ''}`
+                      : `bg-white border border-purple-100/60 ${plan.popular ? 'ring-2 ring-purple-600' : ''}`
+                  }`}
+                >
+                  {plan.popular && (
+                    <div className={`text-white text-center py-2 text-xs sm:text-sm font-semibold tracking-wide uppercase ${
+                      usePremiumTheme 
+                        ? `bg-gradient-to-r ${billingConfig.ctaButtonBg.split(' ').filter(c => c.startsWith('from-') || c.startsWith('to-')).join(' ')}` 
+                        : 'bg-gradient-to-r from-purple-600 to-indigo-600'
+                    }`}>
+                      {variant === 'onetime' ? 'Try It Once' : billingConfig.pricingTitle}
+                    </div>
+                  )}
+                  <div className="p-6 sm:p-8">
+                    <div className="space-y-4">
+                      <h3 className={`text-2xl font-bold ${
+                        usePremiumTheme ? 'text-white' : 'text-gray-900'
+                      }`}>
+                        {plan.name}
+                      </h3>
+                      <div className="flex items-baseline space-x-2">
+                        <span className={`text-4xl sm:text-5xl font-bold ${
+                          usePremiumTheme ? 'text-white' : 'text-gray-900'
+                        }`}>
+                          ${plan.price}
+                        </span>
+                        <span className={`text-lg sm:text-xl ${
+                          usePremiumTheme ? 'text-white/70' : 'text-gray-600'
+                        }`}>
+                          {variant === 'onetime' ? 'one-time' : `/${plan.period}`}
+                        </span>
+                      </div>
+                      <p className={`text-base sm:text-lg font-medium ${
+                        usePremiumTheme ? 'text-white/90' : 'text-gray-700'
+                      }`}>
+                        {plan.billing}
+                      </p>
+                      <p className={`text-sm ${
+                        usePremiumTheme ? 'text-white/70' : 'text-gray-600'
+                      }`}>
+                        {plan.description}
+                      </p>
+                      {plan.highlight && (
+                        <div className={`px-4 py-3 rounded-lg text-sm font-medium border shadow-sm ${
+                          usePremiumTheme 
+                            ? variant === 'onetime'
+                              ? 'bg-green-900/50 text-green-300 border-green-500/50'
+                              : `${billingConfig.pricingCardBg} ${billingConfig.accentColor} ${billingConfig.pricingCardBorder}`
+                            : variant === 'onetime' 
+                              ? 'bg-green-50 text-green-700 border-green-200' 
+                              : 'bg-purple-50 text-purple-700 border-purple-100'
+                        }`}>
+                          {variant === 'onetime' ? (
+                            <div>
+                              <div className="font-bold mb-1">✓ One-time payment - No recurring charges</div>
+                              <div className={`text-xs ${usePremiumTheme ? 'opacity-80' : 'opacity-80'}`}>
+                                After 30 days, you can choose to continue for $5/month or stop
+                              </div>
+                            </div>
+                          ) : (
+                            <span className={usePremiumTheme ? billingConfig.accentColor : ''}>
+                              {billingConfig.pricingDescription}
+                            </span>
+                          )}
+                        </div>
+                      )}
+                    </div>
+
+                    <button
+                      onClick={handleSubscribe}
+                      disabled={processing || subscription?.status === 'active'}
+                      className={`w-full mt-6 py-3.5 rounded-xl font-semibold text-base sm:text-lg transition flex items-center justify-center space-x-2 shadow ${
+                        plan.popular
+                          ? usePremiumTheme
+                            ? `bg-gradient-to-r ${billingConfig.ctaButtonBg} text-slate-900 disabled:opacity-50 disabled:cursor-not-allowed`
+                            : 'bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white disabled:from-purple-400 disabled:to-indigo-400 disabled:cursor-not-allowed'
+                          : usePremiumTheme
+                            ? 'bg-slate-800 hover:bg-slate-700 text-white disabled:bg-slate-800 disabled:cursor-not-allowed'
+                            : 'bg-gray-100 hover:bg-gray-200 text-gray-800 disabled:bg-gray-200 disabled:cursor-not-allowed'
+                      }`}
+                    >
+                      {processing ? (
+                        <>
+                          <Loader2 className="w-5 h-5 animate-spin" />
+                          <span>Processing...</span>
+                        </>
+                      ) : subscription?.plan_type === plan.id && subscription?.status === 'active' ? (
+                        <>
+                          <Check className="w-5 h-5" />
+                          <span>Currently Subscribed</span>
+                        </>
+                      ) : (
+                        <span>{variant === 'onetime' ? 'Get Started - $5 One-Time' : billingConfig.ctaLabel}</span>
+                      )}
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          <div className={`rounded-2xl shadow-lg p-6 sm:p-8 mt-10 ${
+            usePremiumTheme 
+              ? 'bg-slate-900/80 border border-white/10' 
+              : 'bg-white border border-purple-100/60'
+          }`}>
+            <h2 className={`text-2xl font-bold mb-6 text-balance ${
+              usePremiumTheme ? 'text-white' : 'text-gray-900'
+            }`}>
+              All Plans Include
+            </h2>
             <div className="grid gap-4 sm:grid-cols-2">
               {FEATURES.map((feature, index) => (
-                <div key={index} className="flex items-center space-x-3 bg-gray-50 rounded-xl px-4 py-3 border border-gray-100">
-                  <Check className="w-5 h-5 text-green-600 flex-shrink-0" />
-                  <span className="text-gray-700 text-sm sm:text-base">{feature}</span>
+                <div key={index} className={`flex items-center space-x-3 rounded-xl px-4 py-3 border ${
+                  usePremiumTheme 
+                    ? 'bg-slate-800/60 border-white/10' 
+                    : 'bg-gray-50 border-gray-100'
+                }`}>
+                  <Check className={`w-5 h-5 flex-shrink-0 ${
+                    usePremiumTheme ? billingConfig.accentColor : 'text-green-600'
+                  }`} />
+                  <span className={`text-sm sm:text-base ${
+                    usePremiumTheme ? 'text-white/90' : 'text-gray-700'
+                  }`}>
+                    {feature}
+                  </span>
                 </div>
               ))}
             </div>
@@ -510,33 +805,69 @@ export function BillingPage() {
 
           {/* Current Subscription Info */}
           {subscription?.status === 'active' && (
-            <div className="bg-white rounded-2xl shadow-lg p-6 sm:p-8 mt-10 border border-purple-100/60">
-              <h2 className="text-2xl font-bold text-gray-900 mb-6">Current Subscription</h2>
+            <div className={`rounded-2xl shadow-lg p-6 sm:p-8 mt-10 ${
+              usePremiumTheme 
+                ? 'bg-slate-900/80 border border-white/10' 
+                : 'bg-white border border-purple-100/60'
+            }`}>
+              <h2 className={`text-2xl font-bold mb-6 ${
+                usePremiumTheme ? 'text-white' : 'text-gray-900'
+              }`}>
+                Current Subscription
+              </h2>
               <div className="space-y-4">
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-4 bg-purple-50 rounded-xl border border-purple-100">
+                <div className={`flex flex-col sm:flex-row sm:items-center sm:justify-between p-4 rounded-xl border ${
+                  usePremiumTheme 
+                    ? 'bg-slate-800/60 border-white/10' 
+                    : 'bg-purple-50 border-purple-100'
+                }`}>
                   <div className="flex items-center space-x-3 mb-4 sm:mb-0">
-                    <div className="bg-purple-600 text-white rounded-full p-2.5">
+                    <div className={`rounded-full p-2.5 bg-gradient-to-br ${billingConfig.heroIconBg} text-white`}>
                       <Check className="w-5 h-5" />
                     </div>
                     <div>
-                      <p className="font-semibold text-gray-900 text-base sm:text-lg">Active Subscription</p>
-                      <p className="text-sm text-gray-600 mt-0.5">
+                      <p className={`font-semibold text-base sm:text-lg ${
+                        usePremiumTheme ? 'text-white' : 'text-gray-900'
+                      }`}>
+                        Active Subscription
+                      </p>
+                      <p className={`text-sm mt-0.5 ${
+                        usePremiumTheme ? 'text-white/70' : 'text-gray-600'
+                      }`}>
                         {subscription.plan_type === 'monthly' ? 'Monthly Plan' : subscription.plan_type}
                       </p>
                     </div>
                   </div>
-                  <div className="text-sm text-gray-600 sm:text-right">
+                  <div className={`text-sm sm:text-right ${
+                    usePremiumTheme ? 'text-white/70' : 'text-gray-600'
+                  }`}>
                     <p>Status</p>
-                    <p className="font-semibold text-green-600 capitalize mt-1">{subscription.status}</p>
+                    <p className={`font-semibold capitalize mt-1 ${
+                      usePremiumTheme ? billingConfig.accentColor : 'text-green-600'
+                    }`}>
+                      {subscription.status}
+                    </p>
                   </div>
                 </div>
 
                 {subscription.current_period_end && (
-                  <div className="flex items-center space-x-3 p-4 bg-gray-50 rounded-xl border border-gray-100">
-                    <Calendar className="w-5 h-5 text-gray-600" />
+                  <div className={`flex items-center space-x-3 p-4 rounded-xl border ${
+                    usePremiumTheme 
+                      ? 'bg-slate-800/60 border-white/10' 
+                      : 'bg-gray-50 border-gray-100'
+                  }`}>
+                    <Calendar className={`w-5 h-5 ${
+                      usePremiumTheme ? 'text-white/70' : 'text-gray-600'
+                    }`} />
                     <div>
-                      <p className="text-sm text-gray-600">Next billing date</p>
-                      <p className="font-semibold text-gray-900">
+                      <p className={`text-sm ${
+                        usePremiumTheme ? 'text-white/70' : 'text-gray-600'
+                      }`}>
+                        Next billing date
+                      </p>
+                      <p className={`font-semibold ${
+                        usePremiumTheme ? 'text-white' : 'text-gray-900'
+                      }`}>
                         {new Date(subscription.current_period_end).toLocaleDateString()}
                       </p>
                     </div>
@@ -546,7 +877,11 @@ export function BillingPage() {
                 <button
                   onClick={handleManageSubscription}
                   disabled={processing}
-                  className="w-full flex items-center justify-center space-x-2 py-3.5 rounded-xl font-semibold bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white disabled:from-purple-400 disabled:to-indigo-400 disabled:cursor-not-allowed transition shadow"
+                  className={`w-full flex items-center justify-center space-x-2 py-3.5 rounded-xl font-semibold transition shadow ${
+                    usePremiumTheme
+                      ? `bg-gradient-to-r ${billingConfig.ctaButtonBg} text-slate-900 disabled:opacity-50 disabled:cursor-not-allowed`
+                      : 'bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white disabled:from-purple-400 disabled:to-indigo-400 disabled:cursor-not-allowed'
+                  }`}
                 >
                   {processing ? (
                     <>

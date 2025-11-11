@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
 import { useSEO } from '../hooks/useSEO';
+import { checkSubscriptionStatus } from '../lib/subscriptionCheck';
+import { QRContent } from '../lib/qrGenerator';
 import {
   QrCode,
   Plus,
@@ -29,7 +31,7 @@ interface QRCodeItem {
   created_at: string;
   is_active: boolean;
   is_tracked?: boolean;
-  content: any;
+  content: QRContent;
 }
 
 interface Subscription {
@@ -47,16 +49,79 @@ export function DashboardPage() {
   
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+  const searchParams = new URLSearchParams(location.search);
+  const fromBilling = searchParams.get('from') === 'billing';
   const [qrCodes, setQrCodes] = useState<QRCodeItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [subscription, setSubscription] = useState<Subscription | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState('All Status');
+  const [typeFilter, setTypeFilter] = useState('All Types');
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  // CRITICAL SECURITY: Always start as false - no subscription until proven otherwise
+  // This ensures blur is ALWAYS shown until subscription is confirmed
+  const [hasActiveSubscription, setHasActiveSubscription] = useState<boolean>(false);
+  const [subscriptionVerified, setSubscriptionVerified] = useState<boolean>(false); // Track if we've verified
+  const [mountKey, setMountKey] = useState(0); // Force remount key
 
+  // Effect that runs when user or location changes (including navigation)
   useEffect(() => {
-    loadQRCodes();
-    loadSubscription();
+    // CRITICAL SECURITY: Always start with false to ensure blur is shown until verified
+    // This is the default state - no subscription until proven otherwise
+    setHasActiveSubscription(false);
+    setSubscriptionVerified(false);
     
+    // Check if we're coming from billing page
+    const fromBillingParam = new URLSearchParams(location.search).get('from') === 'billing';
+    
+    // Check if we're coming from an external site (like Stripe)
+    const referrer = document.referrer;
+    const isFromExternal = referrer && (referrer.includes('stripe.com') || referrer.includes('checkout.stripe'));
+    const isFromBilling = referrer && referrer.includes('/billing');
+    
+    // If coming from billing or external, force extra reset and delay
+    const needsExtraReset = fromBillingParam || isFromBilling || isFromExternal;
+    
+    // Force a small delay to ensure state is reset before loading
+    const timer = setTimeout(() => {
+      if (needsExtraReset) {
+        // If coming from billing/external, force extra reset with longer delay
+        setHasActiveSubscription(false);
+        setSubscriptionVerified(false);
+        setTimeout(() => {
+          setHasActiveSubscription(false); // Double reset
+          setSubscriptionVerified(false);
+          loadQRCodes();
+          loadSubscription();
+        }, 150);
+      } else {
+        loadQRCodes();
+        loadSubscription();
+      }
+    }, 0);
+    
+    return () => clearTimeout(timer);
+  }, [user, location.key, location.pathname, location.search]);
+  
+  // Additional effect that runs on every mount to ensure fresh state
+  useEffect(() => {
+    // CRITICAL SECURITY: Reset subscription state immediately on mount
+    setHasActiveSubscription(false);
+    setSubscriptionVerified(false);
+    
+    // Small delay to ensure this runs after any cached state
+    const timer = setTimeout(() => {
+      if (user) {
+        loadSubscription();
+      }
+    }, 100);
+    
+    return () => clearTimeout(timer);
+  }, [mountKey]);
+  
+  // Separate effect for event listeners that persist across navigation
+  useEffect(() => {
     // Refresh subscription every 30 seconds to catch webhook updates
     const interval = setInterval(() => {
       if (user) {
@@ -64,7 +129,90 @@ export function DashboardPage() {
       }
     }, 30000);
     
-    return () => clearInterval(interval);
+    // Re-check subscription when page becomes visible (e.g., returning from Stripe)
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible' && user) {
+        // Reset to false first, then check
+        setHasActiveSubscription(false);
+        loadSubscription();
+      }
+    };
+    
+    // Re-check subscription when window regains focus (e.g., returning from Stripe)
+    const handleFocus = () => {
+      if (user) {
+        // Reset to false first, then check
+        setHasActiveSubscription(false);
+        loadSubscription();
+      }
+    };
+    
+    // Re-check when page is shown (e.g., navigating back from billing or Stripe)
+    const handlePageShow = (e: PageTransitionEvent) => {
+      if (user) {
+        // Always reset and force remount key change to ensure fresh state
+        setHasActiveSubscription(false);
+        setMountKey(prev => prev + 1);
+        
+        // If page was restored from cache (back/forward navigation), force full reset
+        if (e.persisted) {
+          // Force a small delay to ensure state is cleared
+          setTimeout(() => {
+            setHasActiveSubscription(false);
+            loadQRCodes();
+            loadSubscription();
+          }, 50);
+        } else {
+          setTimeout(() => {
+            setHasActiveSubscription(false);
+            loadSubscription();
+          }, 50);
+        }
+      }
+    };
+    
+    // Detect browser back/forward navigation
+    const handlePopState = () => {
+      if (user) {
+        // Force remount and reset
+        setHasActiveSubscription(false);
+        setMountKey(prev => prev + 1);
+        setTimeout(() => {
+          setHasActiveSubscription(false);
+          loadSubscription();
+        }, 50);
+      }
+    };
+    
+    // Detect when coming back from external site (like Stripe)
+    const checkReferrer = () => {
+      // If referrer is from Stripe or external, force reset
+      const referrer = document.referrer;
+      if (referrer && (referrer.includes('stripe.com') || referrer.includes('checkout.stripe'))) {
+        setHasActiveSubscription(false);
+        setMountKey(prev => prev + 1);
+        setTimeout(() => {
+          setHasActiveSubscription(false);
+          loadSubscription();
+        }, 100);
+      }
+    };
+    
+    // Check referrer on mount
+    checkReferrer();
+    
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('focus', handleFocus);
+    window.addEventListener('pageshow', handlePageShow);
+    window.addEventListener('popstate', handlePopState);
+    
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('focus', handleFocus);
+      window.removeEventListener('pageshow', handlePageShow);
+      window.removeEventListener('popstate', handlePopState);
+    };
   }, [user]);
 
   async function loadQRCodes() {
@@ -87,9 +235,31 @@ export function DashboardPage() {
   }
 
   async function loadSubscription() {
-    if (!user) return;
+    if (!user) {
+      setHasActiveSubscription(false);
+      setSubscription(null);
+      setSubscriptionVerified(false);
+      return;
+    }
+
+    // CRITICAL SECURITY: Always start with false to ensure blur is shown until verified
+    // This is the default state - no subscription until proven otherwise
+    // Reset multiple times to ensure it sticks
+    setHasActiveSubscription(false);
+    setSubscriptionVerified(false);
+    
+    // Small delay to ensure state is reset before checking
+    await new Promise(resolve => setTimeout(resolve, 50));
+    
+    // Reset again after delay to be absolutely sure
+    setHasActiveSubscription(false);
+    setSubscriptionVerified(false);
 
     try {
+      // Step 1: Always check subscription status first - this is the source of truth
+      const subscriptionStatus = await checkSubscriptionStatus(user.id);
+      
+      // Step 2: Fetch subscription data from database directly
       const { data, error } = await supabase
         .from('subscriptions')
         .select('*')
@@ -97,18 +267,85 @@ export function DashboardPage() {
         .order('created_at', { ascending: false })
         .maybeSingle();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching subscription:', error);
+        // On error, default to false (no access)
+        setHasActiveSubscription(false);
+        setSubscription(null);
+        setSubscriptionVerified(true); // Mark as verified (even if false)
+        return;
+      }
+      
+      // Step 3: If no subscription exists in database, definitely false
+      if (!data) {
+        setHasActiveSubscription(false);
+        setSubscription(null);
+        setSubscriptionVerified(true); // Mark as verified (even if false)
+        return;
+      }
+      
       setSubscription(data);
+      
+      // Step 4: Verify database status is exactly 'active'
+      const dbStatusIsActive = data.status === 'active';
+      
+      // Step 5: Verify checkSubscriptionStatus confirms active
+      const checkStatusIsActive = subscriptionStatus.hasActiveSubscription === true && 
+                                   subscriptionStatus.canCreateQR === true;
+      
+      // Step 6: ONLY set to true if ALL conditions are met:
+      // - Database has subscription
+      // - Database status is exactly 'active'
+      // - checkSubscriptionStatus confirms active
+      // - checkSubscriptionStatus confirms canCreateQR
+      if (dbStatusIsActive && checkStatusIsActive && 
+          subscriptionStatus.hasActiveSubscription === true && 
+          subscriptionStatus.canCreateQR === true) {
+        // All checks passed - user has active subscription
+        setHasActiveSubscription(true);
+      } else {
+        // Any check failed - no active subscription
+        setHasActiveSubscription(false);
+      }
+      
+      // Step 7: Final safety check - if ANY condition fails, force to false
+      if (!dbStatusIsActive || !checkStatusIsActive || 
+          !subscriptionStatus.hasActiveSubscription || 
+          !subscriptionStatus.canCreateQR) {
+        setHasActiveSubscription(false);
+      }
+      
+      // Mark as verified after all checks
+      setSubscriptionVerified(true);
     } catch (error) {
       console.error('Error loading subscription:', error);
+      // On ANY error, default to false (no access)
+      setHasActiveSubscription(false);
+      setSubscription(null);
+      setSubscriptionVerified(true); // Mark as verified (even if false)
     }
   }
 
 
-  const filteredQRCodes = qrCodes.filter(qr =>
-    (qr.name?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
-    (qr.type?.toLowerCase() || '').includes(searchTerm.toLowerCase())
-  );
+  const filteredQRCodes = qrCodes.filter(qr => {
+    // Search filter
+    const matchesSearch = 
+      (qr.name?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
+      (qr.type?.toLowerCase() || '').includes(searchTerm.toLowerCase());
+    
+    // Status filter
+    const matchesStatus = 
+      statusFilter === 'All Status' ||
+      (statusFilter === 'Active' && qr.is_active !== false) ||
+      (statusFilter === 'Inactive' && qr.is_active === false);
+    
+    // Type filter
+    const matchesType = 
+      typeFilter === 'All Types' ||
+      (qr.type?.toLowerCase() === typeFilter.toLowerCase());
+    
+    return matchesSearch && matchesStatus && matchesType;
+  });
 
   async function handleSignOut() {
     await signOut();
@@ -116,6 +353,27 @@ export function DashboardPage() {
   }
 
   async function handleDownloadQR(qrImageUrl: string, qrName: string) {
+    // Double-check subscription status before allowing download
+    if (!user) {
+      alert('Please log in to download QR codes.');
+      navigate('/login');
+      return;
+    }
+
+    // Re-verify subscription status immediately before download
+    try {
+      const subscriptionStatus = await checkSubscriptionStatus(user.id);
+      if (!subscriptionStatus.hasActiveSubscription || !subscriptionStatus.canCreateQR) {
+        alert('Please subscribe to download QR codes.');
+        navigate('/billing');
+        return;
+      }
+    } catch (error) {
+      console.error('Error verifying subscription before download:', error);
+      alert('Unable to verify subscription status. Please try again.');
+      return;
+    }
+
     try {
       const response = await fetch(qrImageUrl);
       const blob = await response.blob();
@@ -159,7 +417,7 @@ export function DashboardPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50 flex">
+    <div className="min-h-screen bg-gray-50 text-gray-900 flex">
       {/* Sidebar */}
       <aside
         className={`
@@ -172,7 +430,7 @@ export function DashboardPage() {
           <div className="p-6 border-b border-gray-200">
             <Link to="/dashboard" className="flex items-center space-x-2">
               <QrCode className="w-8 h-8 text-purple-600" />
-              <span className="text-xl font-bold text-gray-800">generatecodeqr</span>
+              <span className="text-xl font-bold text-gray-900">generatecodeqr</span>
             </Link>
           </div>
 
@@ -211,16 +469,6 @@ export function DashboardPage() {
             </div>
           )}
 
-          {/* Logout */}
-          <div className="p-4 border-t border-gray-200">
-            <button
-              onClick={handleSignOut}
-              className="flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-600 hover:bg-gray-100 transition w-full"
-            >
-              <LogOut className="w-5 h-5" />
-              <span className="font-medium">Log Out</span>
-            </button>
-          </div>
         </div>
       </aside>
 
@@ -236,7 +484,7 @@ export function DashboardPage() {
               >
                 {sidebarOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
               </button>
-              <h1 className="text-2xl font-bold text-gray-800">My QR Codes</h1>
+              <h1 className="text-2xl font-bold text-gray-900">My QR Codes</h1>
             </div>
             <div className="flex items-center space-x-3">
               <Link
@@ -246,6 +494,14 @@ export function DashboardPage() {
                 <Plus className="w-5 h-5" />
                 <span className="hidden md:inline">Create QR Code</span>
               </Link>
+              <button
+                onClick={handleSignOut}
+                className="flex items-center space-x-2 px-4 py-2 text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition"
+                title="Log Out"
+              >
+                <LogOut className="w-5 h-5" />
+                <span className="hidden md:inline">Log Out</span>
+              </button>
             </div>
           </div>
         </header>
@@ -260,16 +516,24 @@ export function DashboardPage() {
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 placeholder="Search QR codes..."
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                className="w-full pl-10 pr-4 py-2 bg-white border border-gray-300 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
               />
             </div>
             <div className="flex items-center space-x-2">
-              <select className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500">
+              <select 
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+                className="px-4 py-2 bg-white border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-purple-500"
+              >
                 <option>All Status</option>
                 <option>Active</option>
                 <option>Inactive</option>
               </select>
-              <select className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500">
+              <select 
+                value={typeFilter}
+                onChange={(e) => setTypeFilter(e.target.value)}
+                className="px-4 py-2 bg-white border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-purple-500"
+              >
                 <option>All Types</option>
                 <option>Website</option>
                 <option>vCard</option>
@@ -305,13 +569,46 @@ export function DashboardPage() {
                 <div key={qr.id} className="bg-white rounded-lg border border-gray-200 p-6 hover:shadow-lg transition">
                   <div className="flex items-start space-x-4">
                     {/* QR Code Image */}
-                    <div className="flex-shrink-0">
+                    <div className="flex-shrink-0 relative">
                       {qr.qr_image_url ? (
-                        <img
-                          src={qr.qr_image_url}
-                          alt={qr.name || 'QR Code'}
-                          className="w-24 h-24 rounded-lg border border-gray-200"
-                        />
+                        <div className="relative">
+                          {/* CRITICAL SECURITY: Never show QR code without active subscription */}
+                          {/* Only render clear image if subscription is verified AND active */}
+                          {subscriptionVerified && hasActiveSubscription ? (
+                            <img
+                              src={qr.qr_image_url}
+                              alt={qr.name || 'QR Code'}
+                              className="w-24 h-24 rounded-lg border border-gray-200 transition"
+                            />
+                          ) : (
+                            <>
+                              {/* Always show blurred version if no subscription or not verified */}
+                              <img
+                                src={qr.qr_image_url}
+                                alt={qr.name || 'QR Code'}
+                                className="w-24 h-24 rounded-lg border border-gray-200 transition blur-md"
+                                style={{
+                                  // Force blur via inline style as backup
+                                  filter: 'blur(12px)',
+                                  pointerEvents: 'none',
+                                  opacity: 0.5
+                                }}
+                              />
+                              {/* Always show overlay if no active subscription */}
+                              <button
+                                onClick={() => navigate('/billing')}
+                                className="absolute inset-0 flex items-center justify-center bg-white/80 rounded-lg hover:bg-white/90 transition cursor-pointer z-10"
+                                title="Subscribe to unlock QR code downloads"
+                                style={{ zIndex: 10 }}
+                              >
+                                <div className="text-center px-2">
+                                  <p className="text-xs font-semibold text-gray-700">Subscribe</p>
+                                  <p className="text-xs text-gray-600">to unlock</p>
+                                </div>
+                              </button>
+                            </>
+                          )}
+                        </div>
                       ) : (
                         <div className="w-24 h-24 rounded-lg border border-gray-200 bg-gray-100 flex items-center justify-center">
                           <QrCode className="w-8 h-8 text-gray-400" />
@@ -324,7 +621,7 @@ export function DashboardPage() {
                       <div className="flex items-start justify-between">
                         <div>
                           <h3 className="text-lg font-semibold text-gray-800 truncate">{qr.name || 'Unnamed QR Code'}</h3>
-                          <p className="text-sm text-gray-500">
+                          <p className="text-sm text-gray-500 mt-1">
                             {qr.type ? (qr.type.charAt(0).toUpperCase() + qr.type.slice(1)) : 'Unknown Type'}
                           </p>
                           <p className="text-xs text-gray-400 mt-1">
@@ -339,8 +636,8 @@ export function DashboardPage() {
                       {qr.is_tracked !== false && qr.scan_count > 0 && (
                         <div className="mt-4 flex items-center space-x-4">
                           <div className="flex items-center text-sm text-gray-600">
-                            <BarChart3 className="w-4 h-4 mr-1" />
-                            <span>{qr.scan_count} scans</span>
+                            <BarChart3 className="w-4 h-4 mr-1 text-purple-600" />
+                            <span className="font-medium">{qr.scan_count} scans</span>
                           </div>
                         </div>
                       )}
@@ -348,8 +645,20 @@ export function DashboardPage() {
                       <div className="mt-4 flex items-center space-x-2 flex-wrap gap-2">
                         {qr.qr_image_url && (
                           <button
-                            onClick={() => handleDownloadQR(qr.qr_image_url, qr.name)}
-                            className="flex items-center space-x-1 px-3 py-2 bg-purple-100 text-purple-700 rounded-lg hover:bg-purple-200 transition text-sm"
+                            onClick={() => {
+                              if (!hasActiveSubscription) {
+                                navigate('/billing');
+                                return;
+                              }
+                              handleDownloadQR(qr.qr_image_url, qr.name);
+                            }}
+                            disabled={!hasActiveSubscription}
+                            className={`flex items-center space-x-1 px-3 py-2 rounded-lg transition text-sm font-medium ${
+                              hasActiveSubscription
+                                ? 'bg-purple-100 text-purple-700 hover:bg-purple-200'
+                                : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                            }`}
+                            title={!hasActiveSubscription ? 'Subscribe to download QR codes' : 'Download QR code'}
                           >
                             <Download className="w-4 h-4" />
                             <span>Download</span>
@@ -357,19 +666,19 @@ export function DashboardPage() {
                         )}
                         <button
                           onClick={() => handleToggleActive(qr.id, qr.is_active !== false)}
-                          className={`flex items-center space-x-1 px-3 py-2 rounded-lg hover:opacity-80 transition text-sm ${
+                          className={`flex items-center space-x-1 px-3 py-2 rounded-lg transition text-sm font-medium ${
                             qr.is_active !== false
                               ? 'bg-green-100 text-green-700 hover:bg-green-200'
                               : 'bg-orange-100 text-orange-700 hover:bg-orange-200'
                           }`}
                         >
-                          <Power className={`w-4 h-4 ${qr.is_active !== false ? '' : 'text-orange-600'}`} />
+                          <Power className="w-4 h-4" />
                           <span>{qr.is_active !== false ? 'Active' : 'Inactive'}</span>
                         </button>
                         {qr.is_tracked !== false && (
                           <Link
                             to={`/analytics/${qr.id}`}
-                            className="flex items-center space-x-1 px-3 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition text-sm"
+                            className="flex items-center space-x-1 px-3 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition text-sm font-medium"
                           >
                             <Eye className="w-4 h-4" />
                             <span>View Details</span>

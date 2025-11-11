@@ -102,24 +102,24 @@ export function AnalyticsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 text-gray-900">
       <div className="container mx-auto px-6 py-12">
         <div className="mb-8">
           <Link to="/dashboard" className="text-purple-600 hover:text-purple-700 mb-4 inline-block">
             ← Back to Dashboard
           </Link>
-          <h1 className="text-3xl font-bold text-gray-800">Analytics</h1>
+          <h1 className="text-3xl font-bold text-gray-900">Analytics</h1>
         </div>
 
         {/* QR Code Selector and Filters */}
-        <div className="bg-white rounded-lg shadow p-6 mb-6">
+        <div className="bg-white rounded-lg shadow border border-gray-200 p-6 mb-6">
           <div className="flex flex-col md:flex-row md:items-center space-y-4 md:space-y-0 md:space-x-4">
             <div className="flex-1">
               <label className="block text-sm font-medium text-gray-700 mb-2">Select QR Code</label>
               <select
                 value={selectedQR}
                 onChange={(e) => setSelectedQR(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                className="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-purple-500"
               >
                 {qrCodes.map(qr => (
                   <option key={qr.id} value={qr.id}>{qr.name}</option>
@@ -131,7 +131,7 @@ export function AnalyticsPage() {
               <select
                 value={dateRange}
                 onChange={(e) => setDateRange(e.target.value)}
-                className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                className="px-4 py-2 bg-white border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-purple-500"
               >
                 <option value="7days">Last 7 days</option>
                 <option value="30days">Last 30 days</option>
@@ -144,35 +144,35 @@ export function AnalyticsPage() {
 
         {/* Stats Cards */}
         <div className="grid md:grid-cols-4 gap-6 mb-6">
-          <div className="bg-white rounded-lg shadow p-6">
+          <div className="bg-white rounded-lg shadow border border-gray-200 p-6">
             <div className="flex items-center justify-between mb-2">
               <h3 className="text-sm font-medium text-gray-600">Total Scans</h3>
               <BarChart3 className="w-5 h-5 text-purple-600" />
             </div>
-            <p className="text-3xl font-bold text-gray-800">{analytics?.totalScans || 0}</p>
+            <p className="text-3xl font-bold text-gray-900">{analytics?.totalScans || 0}</p>
           </div>
-          <div className="bg-white rounded-lg shadow p-6">
+          <div className="bg-white rounded-lg shadow border border-gray-200 p-6">
             <div className="flex items-center justify-between mb-2">
               <h3 className="text-sm font-medium text-gray-600">Unique Scans</h3>
               <Users className="w-5 h-5 text-blue-600" />
             </div>
-            <p className="text-3xl font-bold text-gray-800">{analytics?.uniqueScans || 0}</p>
+            <p className="text-3xl font-bold text-gray-900">{analytics?.uniqueScans || 0}</p>
           </div>
-          <div className="bg-white rounded-lg shadow p-6">
+          <div className="bg-white rounded-lg shadow border border-gray-200 p-6">
             <div className="flex items-center justify-between mb-2">
               <h3 className="text-sm font-medium text-gray-600">Countries</h3>
               <Globe className="w-5 h-5 text-green-600" />
             </div>
-            <p className="text-3xl font-bold text-gray-800">
+            <p className="text-3xl font-bold text-gray-900">
               {Object.keys(analytics?.countryCounts || {}).length}
             </p>
           </div>
-          <div className="bg-white rounded-lg shadow p-6">
+          <div className="bg-white rounded-lg shadow border border-gray-200 p-6">
             <div className="flex items-center justify-between mb-2">
               <h3 className="text-sm font-medium text-gray-600">Platforms</h3>
               <TrendingUp className="w-5 h-5 text-orange-600" />
             </div>
-            <p className="text-3xl font-bold text-gray-800">
+            <p className="text-3xl font-bold text-gray-900">
               {Object.keys(analytics?.osCounts || {}).length}
             </p>
           </div>
@@ -180,14 +180,14 @@ export function AnalyticsPage() {
 
         {/* Charts */}
         <div className="grid md:grid-cols-2 gap-6 mb-6">
-          <div className="bg-white rounded-lg shadow p-6">
+          <div className="bg-white rounded-lg shadow border border-gray-200 p-6">
             <h3 className="text-lg font-semibold text-gray-800 mb-4">Scans by Operating System</h3>
             <div className="space-y-3">
               {Object.entries(analytics?.osCounts || {}).map(([os, count]: [string, any]) => (
                 <div key={os}>
                   <div className="flex justify-between text-sm mb-1">
                     <span className="text-gray-600">{os}</span>
-                    <span className="font-medium">{count}</span>
+                    <span className="font-medium text-gray-900">{count}</span>
                   </div>
                   <div className="w-full bg-gray-200 rounded-full h-2">
                     <div
@@ -200,7 +200,7 @@ export function AnalyticsPage() {
             </div>
           </div>
 
-          <div className="bg-white rounded-lg shadow p-6">
+          <div className="bg-white rounded-lg shadow border border-gray-200 p-6">
             <h3 className="text-lg font-semibold text-gray-800 mb-4">Top Countries</h3>
             <div className="space-y-3">
               {Object.entries(analytics?.countryCounts || {})
@@ -210,7 +210,7 @@ export function AnalyticsPage() {
                   <div key={country}>
                     <div className="flex justify-between text-sm mb-1">
                       <span className="text-gray-600">{country || 'Unknown'}</span>
-                      <span className="font-medium">{count}</span>
+                      <span className="font-medium text-gray-900">{count}</span>
                     </div>
                     <div className="w-full bg-gray-200 rounded-full h-2">
                       <div
@@ -225,7 +225,7 @@ export function AnalyticsPage() {
         </div>
 
         {/* Recent Scans Table */}
-        <div className="bg-white rounded-lg shadow overflow-hidden">
+        <div className="bg-white rounded-lg shadow border border-gray-200 overflow-hidden">
           <div className="p-6">
             <h3 className="text-lg font-semibold text-gray-800 mb-4">Recent Scans</h3>
           </div>
@@ -242,7 +242,7 @@ export function AnalyticsPage() {
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
                 {analytics?.recentScans?.map((scan: any, index: number) => (
-                  <tr key={index}>
+                  <tr key={index} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                       {new Date(scan.scanned_at).toLocaleString()}
                     </td>

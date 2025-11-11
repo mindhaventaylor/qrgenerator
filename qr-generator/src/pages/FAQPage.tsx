@@ -58,36 +58,36 @@ export function FAQPage() {
   const { user } = useAuth();
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 text-white">
+    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-800 text-white">
       <nav className="container mx-auto px-6 py-6 flex justify-between items-center">
         <Link to="/" className="flex items-center space-x-2">
-          <QrCode className="w-8 h-8 text-purple-400" />
-          <span className="text-2xl font-bold">generatecodeqr</span>
+          <QrCode className="w-8 h-8 text-cyan-400" />
+          <span className="text-2xl font-bold text-white">generatecodeqr</span>
         </Link>
         <div className="flex items-center space-x-4">
-          <Link to="/login" className="hover:text-purple-300 transition">Log In</Link>
-          <Link to="/signup" className="bg-purple-600 hover:bg-purple-700 px-6 py-2 rounded-lg transition">
+          <Link to="/login" className="text-white/70 hover:text-white transition">Log In</Link>
+          <Link to="/signup" className="bg-cyan-400 hover:bg-cyan-300 text-slate-900 px-6 py-2 rounded-lg transition">
             Sign Up
           </Link>
         </div>
       </nav>
 
       <div className="container mx-auto px-6 py-16">
-        <h1 className="text-5xl font-bold text-center mb-4">Frequently Asked Questions</h1>
-        <p className="text-xl text-center text-gray-300 mb-12">Find answers to common questions about our QR code generator</p>
+        <h1 className="text-5xl font-bold text-center mb-4 text-white">Frequently Asked Questions</h1>
+        <p className="text-xl text-center text-white/70 mb-12">Find answers to common questions about our QR code generator</p>
 
         <div className="max-w-3xl mx-auto space-y-4">
           {FAQS.map((faq, index) => (
-            <div key={index} className="bg-white/10 backdrop-blur-sm rounded-lg overflow-hidden">
+            <div key={index} className="bg-slate-900/80 border border-white/10 backdrop-blur-sm rounded-lg overflow-hidden">
               <button
                 onClick={() => setOpenIndex(openIndex === index ? null : index)}
-                className="w-full px-6 py-4 flex items-center justify-between text-left hover:bg-white/20 transition"
+                className="w-full px-6 py-4 flex items-center justify-between text-left hover:bg-white/10 transition"
               >
-                <span className="font-semibold text-lg">{faq.question}</span>
-                <ChevronDown className={`w-5 h-5 transition-transform ${openIndex === index ? 'rotate-180' : ''}`} />
+                <span className="font-semibold text-lg text-white">{faq.question}</span>
+                <ChevronDown className={`w-5 h-5 transition-transform text-white/70 ${openIndex === index ? 'rotate-180' : ''}`} />
               </button>
               {openIndex === index && (
-                <div className="px-6 pb-4 text-gray-300">
+                <div className="px-6 pb-4 text-white/70">
                   {faq.answer}
                 </div>
               )}
@@ -97,17 +97,17 @@ export function FAQPage() {
 
         {/* Subscription CTA Section */}
         <div className="max-w-3xl mx-auto mt-16 mb-12">
-          <div className="bg-gradient-to-r from-purple-600 to-indigo-600 rounded-2xl p-8 md:p-12 text-center shadow-2xl">
-            <CreditCard className="w-12 h-12 mx-auto mb-4 text-white" />
-            <h2 className="text-3xl md:text-4xl font-bold mb-4">Ready to Get Started?</h2>
-            <p className="text-lg md:text-xl text-purple-100 mb-6 max-w-2xl mx-auto">
+          <div className="bg-slate-900/80 border border-white/10 rounded-2xl p-8 md:p-12 text-center shadow-2xl">
+            <CreditCard className="w-12 h-12 mx-auto mb-4 text-cyan-400" />
+            <h2 className="text-3xl md:text-4xl font-bold mb-4 text-white">Ready to Get Started?</h2>
+            <p className="text-lg md:text-xl text-white/70 mb-6 max-w-2xl mx-auto">
               Join thousands of users creating professional QR codes with advanced analytics. 
               Simple $5/month pricing - no hidden fees, cancel anytime.
             </p>
             {user ? (
               <Link 
                 to="/billing" 
-                className="inline-flex items-center gap-2 bg-white text-purple-600 hover:bg-gray-100 px-8 py-4 rounded-lg font-bold text-lg transition transform hover:scale-105 shadow-lg"
+                className="inline-flex items-center gap-2 bg-cyan-400 hover:bg-cyan-300 text-slate-900 px-8 py-4 rounded-lg font-bold text-lg transition transform hover:scale-105 shadow-lg"
               >
                 <CreditCard className="w-5 h-5" />
                 View Subscription & Pricing
@@ -117,7 +117,7 @@ export function FAQPage() {
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
                 <Link 
                   to="/billing" 
-                  className="inline-flex items-center gap-2 bg-white text-purple-600 hover:bg-gray-100 px-8 py-4 rounded-lg font-bold text-lg transition transform hover:scale-105 shadow-lg"
+                  className="inline-flex items-center gap-2 bg-cyan-400 hover:bg-cyan-300 text-slate-900 px-8 py-4 rounded-lg font-bold text-lg transition transform hover:scale-105 shadow-lg"
                 >
                   <CreditCard className="w-5 h-5" />
                   View Pricing
@@ -125,7 +125,7 @@ export function FAQPage() {
                 </Link>
                 <Link 
                   to="/signup" 
-                  className="inline-flex items-center gap-2 bg-purple-800 hover:bg-purple-900 text-white px-8 py-4 rounded-lg font-bold text-lg transition transform hover:scale-105 shadow-lg"
+                  className="inline-flex items-center gap-2 bg-transparent border border-white/30 hover:bg-white/10 text-white px-8 py-4 rounded-lg font-bold text-lg transition transform hover:scale-105 shadow-lg"
                 >
                   Get Started Free
                   <ArrowRight className="w-5 h-5" />
@@ -136,8 +136,8 @@ export function FAQPage() {
         </div>
 
         <div className="text-center mt-12">
-          <p className="text-gray-300 mb-4">Ready to get started?</p>
-          <Link to="/signup" className="inline-block bg-purple-600 hover:bg-purple-700 px-8 py-3 rounded-lg font-semibold transition">
+          <p className="text-white/70 mb-4">Ready to get started?</p>
+          <Link to="/signup" className="inline-block bg-cyan-400 hover:bg-cyan-300 text-slate-900 px-8 py-3 rounded-lg font-semibold transition">
             Sign Up Now
           </Link>
         </div>
