@@ -147,14 +147,14 @@ export const checkoutVariants: Record<LandingVariantKey, CheckoutVariantConfig> 
   },
   page5: {
     heroTitle: 'Unlock Executive-Grade QR Insights',
-    heroDescription: 'Track every scan, click, and conversion in dashboards designed for leadership—still $5/month. No sales calls, just sign up and start tracking.',
+    heroDescription: 'Design, edit, and track every QR — all in one simple $5/month dashboard.',
     heroIcon: 'bar-chart',
     heroIconBg: 'from-cyan-400 to-cyan-500',
     benefitsTitle: 'Analytics Without Enterprise Pricing',
     benefitsDescription: 'See exactly what your $5/month unlocks—executive dashboards, exports, and real-time tracking.',
     benefitsBg: 'from-slate-800 via-slate-700 to-slate-800',
     features: [
-      { icon: 'analytics', title: 'Attribution Clarity', description: 'Tie scans to conversions and revenue with built-in tracking.' },
+      { icon: 'analytics', title: 'Clear tracking & results', description: 'See where every scan comes from — location, device, date, time — to measure what’s really working.' },
       { icon: 'shield', title: 'Governance Controls', description: 'Role-based access, audit logs, and compliant data handling.' },
       { icon: 'settings', title: 'Real-Time Dashboards', description: 'Track scans, locations, devices, and conversions in real-time.' },
       { icon: 'download', title: 'Export Reports', description: 'Download analytics reports in multiple formats for stakeholders.' },
