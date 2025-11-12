@@ -219,7 +219,8 @@ type VariantLandingConfig = {
   features: VariantFeature[];
   highlight: VariantHighlight;
   pricing: VariantPricing;
-  testimonial: VariantTestimonial;
+  testimonial?: VariantTestimonial;
+  testimonials?: VariantTestimonial[];
   closing: VariantClosing;
 };
 
@@ -562,20 +563,34 @@ const landingVariantConfigs: Record<Exclude<LandingVariantKey, 'control'>, Varia
       price: '$5',
       suffix: '/month',
       bullet: ['Unlimited dashboards & exports', 'Share links with leadership', 'Alerts for dips or anomalies'],
-      footnote: 'No sales calls. Sign up and start tracking.'
+      footnote: 'No signup traps. Just $5/month when you’re ready to save your QR.'
     },
-    testimonial: {
-      quote:
-        '“Our exec team finally understands QR performance. Everything lives in one dashboard that costs less than coffee.”',
-      author: 'Nikhil Patel',
-      role: 'Head of Analytics @ Beacon Retail'
-    },
+    testimonials: [
+      {
+        quote:
+          '“We used to reprint menus every time something changed. Now we just update the QR and it\'s live everywhere — instantly.”',
+        author: 'Maria Torres',
+        role: 'Owner @ La Vida Café'
+      },
+      {
+        quote:
+          '“We added our logo and brand colors in seconds. Clients scan our QR codes on packaging and we can see where the scans come from — super useful.”',
+        author: 'David Kim',
+        role: 'Founder @ Urban Cosmetics'
+      },
+      {
+        quote:
+          '“Our marketing team finally understands how our QR codes perform. Everything\'s in one live dashboard that costs less than a cup of coffee.”',
+        author: 'Nikhil Patel',
+        role: 'Marketing Director @ Beacon Retail'
+      }
+    ],
     closing: {
-      title: 'Unlock executive-grade QR insights',
-      description: 'Track every scan, click, and conversion in dashboards designed for leadership — still $5/month.',
-      primaryCtaLabel: 'Get analytics workspace',
+      title: 'Start creating, editing & tracking your QR codes — all for $5/month',
+      description: 'Design branded QR codes, edit them anytime, and see real-time scan analytics — no hidden fees, no fake trials, just an honest QR platform.',
+      primaryCtaLabel: 'Create your QR code now',
       primaryCtaHref: '/signup',
-      secondaryCtaLabel: 'See reporting tour',
+      secondaryCtaLabel: 'See how it works',
       secondaryCtaHref: '/faq'
     }
   },
@@ -2048,12 +2063,16 @@ function VariantLanding({ variantKey, copy, config }: VariantLandingProps) {
               </div>
               <Link
                 to={copy.primaryCtaHref}
-                className={`rounded-3xl border p-8 ${config.theme.outline} ${config.theme.card} block hover:scale-[1.01] transition cursor-pointer group`}
+                className={`rounded-3xl border p-8 ${config.theme.outline} ${config.theme.card} block hover:scale-[1.01] transition cursor-pointer group space-y-8`}
               >
-                <p className="text-sm italic leading-relaxed">{config.testimonial.quote}</p>
-                <div className="mt-6 text-sm font-semibold">{config.testimonial.author}</div>
-                <div className={`text-xs uppercase tracking-wide ${config.theme.subtext}`}>{config.testimonial.role}</div>
-                <div className={`mt-4 inline-flex items-center gap-2 text-xs font-semibold transition opacity-0 group-hover:opacity-100 ${config.theme.text}`}>
+                {(config.testimonials || [config.testimonial]).filter(Boolean).map((testimonial, index) => (
+                  <div key={testimonial.author} className={index > 0 ? 'pt-8 border-t border-white/10' : ''}>
+                    <p className="text-sm italic leading-relaxed">{testimonial.quote}</p>
+                    <div className="mt-6 text-sm font-semibold">{testimonial.author}</div>
+                    <div className={`text-xs uppercase tracking-wide ${config.theme.subtext}`}>{testimonial.role}</div>
+                  </div>
+                ))}
+                <div className={`inline-flex items-center gap-2 text-xs font-semibold transition opacity-0 group-hover:opacity-100 ${config.theme.text}`}>
                   Join them <ArrowRight className="h-3 w-3" />
                 </div>
               </Link>
@@ -2143,5 +2162,4 @@ function VariantLanding({ variantKey, copy, config }: VariantLandingProps) {
     </div>
   );
 }
-
 
