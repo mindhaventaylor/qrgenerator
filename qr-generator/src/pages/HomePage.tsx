@@ -108,13 +108,13 @@ const VARIANT_COPY: Record<LandingVariantKey, VariantCopy> = {
     heroFootnote: 'Unlimited scans, sessions, and updates. Cancel anytime.'
   },
   page5: {
-    heroBadge: 'Executive dashboards • Honest pricing • No surprises',
-    heroTitle: 'Get executive QR analytics without enterprise contracts',
+    heroBadge: 'EDITABLE QR CODES • REAL-TIME ANALYTICS • HONEST PRICING',
+    heroTitle: 'Get Real-time QR Analytics Without Overpriced Plans or Contracts',
     heroDescription:
-      'Track scan trends, ROI, and at-risk campaigns in dashboards your leadership understands—all included in one transparent $5/month plan.',
-    primaryCtaLabel: 'Unlock analytics workspace',
+      'Track scans, locations, devices, and engagement in clean, easy dashboards. Edit or deactivate any QR anytime — all included in one transparent $5/month plan.',
+    primaryCtaLabel: 'Try Now',
     primaryCtaHref: '/signup',
-    secondaryCtaLabel: 'See reporting tour',
+    secondaryCtaLabel: 'Explore QR Builder',
     secondaryCtaHref: '/faq',
     heroFootnote: 'Unlimited dashboards and alerts. Flat $5/month.'
   },
@@ -528,53 +528,53 @@ const landingVariantConfigs: Record<Exclude<LandingVariantKey, 'control'>, Varia
     },
     hero: {
       layout: 'reverse',
-      supporting: 'Executive dashboards and funnel analytics included in the same $5 membership.',
+      supporting: 'Unlimited QR Codes, Full Analytics, and Tracking Dashboard — all included in your $5/month plan. No tiers, no tricks.',
       stats: [
-        { label: 'Campaign ROI tracked', value: '+37%', helper: 'Better scan attribution' },
-        { label: 'Dashboards shared', value: 'Unlimited', helper: 'Invite stakeholders' },
-        { label: 'Analytics included', value: 'Real-time tracking', helper: 'All features' }
+        { label: 'MARKETING ROI TRACKED', value: '+37%', helper: 'More accurate scan insights' },
+        { label: 'DASHBOARD ACCESS', value: 'Unlimited', helper: 'Share reports with your team' },
+        { label: 'REAL-TIME ANALYTICS', value: 'Real-time tracking', helper: 'All features included' }
       ],
       visual: 'rings'
     },
     supportingLayout: 'grid',
     supportingPoints: [
-      'Executive-ready dashboards with scans, click-throughs, and revenue impact.',
-      'Compare performance across channels, creative, and QR destinations.',
-      'Export board-ready PDFs or schedule email summaries for stakeholders.'
+      'See total and unique scans, locations, devices, and engagement — all in one simple dashboard.',
+      'Compare QR performance across campaigns, materials, or clients to see what drives real engagement.',
+      'Export clean PDF reports or schedule email summaries to share performance with clients or your team.'
     ],
     featureLayout: 'stacked',
     features: [
-      { icon: 'analytics', title: 'Attribution clarity', description: 'Tie scans to conversions and revenue with built-in tracking.' },
-      { icon: 'shield', title: 'Governance controls', description: 'Role-based access, audit logs, and compliant data handling.' },
-      { icon: 'settings', title: 'Real-time analytics', description: 'Track scans, locations, devices, and conversions in real-time dashboards.' }
+      { icon: 'analytics', title: 'Clear tracking & results', description: 'Tie scans to conversions and revenue with built-in tracking.' },
+      { icon: 'shield', title: 'Full control over your QR codes', description: 'Activate, deactivate, or update your QR codes anytime — manage everything easily from your dashboard.' },
+      { icon: 'settings', title: 'Real-time analytics', description: 'Track scans, locations, devices, and engagement — all live in your dashboard.`' }
     ],
     highlight: {
-      eyebrow: 'Executive dashboard rollout',
-      title: 'Gave leadership weekly QR performance clarity',
-      description: 'A franchise network replaced spreadsheets with real-time landing analytics across 120 locations.',
-      metricValue: '120',
-      metricLabel: 'Locations unified under one dashboard',
-      footnote: 'Analytics packaged inside the $5 plan.'
+      eyebrow: 'REAL BUSINESSES, REAL RESULTS',
+      title: 'Gave leadership weeklyQR performance clarity',
+      description: 'A restaurant chain switched from manual tracking to live QR dashboards — seeing scan growth and engagement across 120 locations.',
+      metricValue: '12,000+',
+      metricLabel: 'Trusted by Thousands',
+      footnote: 'From small businesses to freelancers — everyone’s using GenerateCodeQR to create, edit, and track their QR codes.'
     },
     pricing: {
       eyebrow: 'Analytics without enterprise pricing',
-      title: 'Executive visibility for $5/month',
-      description: 'Dashboards, exports, and alerts all live in the same honest plan. Cancel whenever you decide.',
+      title: 'Everything your business needs — for just $5/month',
+      description: 'Create, edit, and track unlimited QR codes with full analytics and branded designs. Cancel anytime.',
       price: '$5',
       suffix: '/month',
-      bullet: ['Unlimited dashboards & exports', 'Share links with leadership', 'Alerts for dips or anomalies'],
+      bullet: ['Custom branded QR codes (logos, colors, vectors)', 'Editable & trackable dynamic codes', 'Edit content anytime','Real-time analytics dashboard','Unlimited QRs & scans','Activate or pause codes anytime', 'Multiple download formats (PNG, SVG, PDF)', 'Simple all-in-one dashboard', 'Priority support', 'Cancel anytime — no hidden fees'],
       footnote: 'No signup traps. Just $5/month when you’re ready to save your QR.'
     },
     testimonials: [
       {
         quote:
-          '“We used to reprint menus every time something changed. Now we just update the QR and it\'s live everywhere — instantly.”',
+          '“We used to reprint menus every time something changed. Now we just update the QR and it\'s live everywhere, instantly.”',
         author: 'Maria Torres',
         role: 'Owner @ La Vida Café'
       },
       {
         quote:
-          '“We added our logo and brand colors in seconds. Clients scan our QR codes on packaging and we can see where the scans come from — super useful.”',
+          '“We added our logo and brand colors in seconds. Clients scan our QR codes on packaging and we can see where the scans come from. It\'s super useful.”',
         author: 'David Kim',
         role: 'Founder @ Urban Cosmetics'
       },
@@ -1971,7 +1971,7 @@ function VariantLanding({ variantKey, copy, config }: VariantLandingProps) {
           <section className="py-12 md:py-16">
             <div className={`mb-8 flex items-center gap-3 text-sm font-semibold ${config.theme.subtext}`}>
               <div className="h-1 w-12 rounded-full bg-current opacity-60" />
-              Lead journeys powered by $5/month
+              Track every scan and campaign — powered by one simple $5/month plan.
             </div>
             {renderSupportingPoints()}
             <div className="mt-8 text-center">
@@ -1979,7 +1979,7 @@ function VariantLanding({ variantKey, copy, config }: VariantLandingProps) {
                 to={copy.primaryCtaHref}
                 className={`inline-flex items-center justify-center gap-2 rounded-full px-8 py-3 text-base font-semibold transition ${config.theme.secondaryButton} ${config.theme.secondaryButtonHover}`}
               >
-                Explore builder
+                Explore QR Builder
                 <ArrowRight className="h-5 w-5" />
               </Link>
             </div>
@@ -1988,16 +1988,16 @@ function VariantLanding({ variantKey, copy, config }: VariantLandingProps) {
           <section className="py-12 md:py-16">
             <div className="mb-8 flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
               <div>
-                <h2 className={`text-2xl font-bold md:text-3xl ${config.theme.text}`}>Everything built into the platform</h2>
+                <h2 className={`text-2xl font-bold md:text-3xl ${config.theme.text}`}>Everything you need — already included</h2>
                 <p className={`mt-2 text-sm ${config.theme.subtext}`}>
-                  Unlimited scans, live editing, and analytics stay under the same $5 membership.
+                Unlimited scans, real-time analytics, and editable QR codes — all part of one honest $5/month plan.
                 </p>
               </div>
               <Link
                 to={copy.primaryCtaHref}
                 className={`inline-flex items-center gap-2 text-sm font-semibold transition ${config.theme.secondaryButton} ${config.theme.secondaryButtonHover} rounded-full px-5 py-2`}
               >
-                Explore builder
+                Try the QR builder
                 <ArrowRight className="h-4 w-4" />
               </Link>
             </div>
