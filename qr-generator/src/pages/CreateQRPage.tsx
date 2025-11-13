@@ -392,7 +392,7 @@ export function CreateQRPage() {
     if (step === 1) {
       return (
         <div>
-          <h2 className="text-2xl font-bold text-gray-900 mb-6">1. Select a type of QR code</h2>
+          <h2 className="text-2xl font-bold text-white mb-6">1. Select a type of QR code</h2>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {QR_TYPES.map((type) => {
               const Icon = type.icon;
@@ -403,11 +403,11 @@ export function CreateQRPage() {
                     setSelectedType(type.id);
                     setStep(2);
                   }}
-                  className="p-6 bg-white rounded-xl border-2 border-gray-200 hover:border-purple-500 hover:shadow-lg transition text-center"
+                  className="p-6 bg-slate-900/60 rounded-xl border-2 border-white/10 hover:border-cyan-400 hover:shadow-lg transition text-center"
                 >
-                  <Icon className="w-10 h-10 mx-auto mb-3 text-purple-600" />
-                  <h3 className="font-semibold text-gray-900 mb-1">{type.name}</h3>
-                  <p className="text-xs text-gray-600">{type.description}</p>
+                  <Icon className="w-10 h-10 mx-auto mb-3 text-cyan-400" />
+                  <h3 className="font-semibold text-white mb-1">{type.name}</h3>
+                  <p className="text-xs text-white/70">{type.description}</p>
                 </button>
               );
             })}
@@ -419,27 +419,27 @@ export function CreateQRPage() {
     if (step === 2) {
       return (
         <div>
-          <h2 className="text-2xl font-bold text-gray-900 mb-6">2. Content</h2>
+          <h2 className="text-2xl font-bold text-white mb-6">2. Content</h2>
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">QR Code Name</label>
+              <label className="block text-sm font-medium text-white mb-2">QR Code Name</label>
               <input
                 type="text"
                 value={qrName}
                 onChange={(e) => setQrName(e.target.value)}
-                className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                className="w-full px-4 py-3 bg-slate-900/60 border border-white/10 rounded-lg text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-cyan-400 focus:border-cyan-400"
                 placeholder="Enter a name for your QR code"
               />
             </div>
 
             {selectedType === 'website' && (
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Website URL</label>
+                <label className="block text-sm font-medium text-white mb-2">Website URL</label>
                 <input
                   type="url"
                   value={content.url || ''}
                   onChange={(e) => setContent({ ...content, url: e.target.value })}
-                  className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  className="w-full px-4 py-3 bg-slate-900/60 border border-white/10 rounded-lg text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-cyan-400 focus:border-cyan-400"
                   placeholder="https://example.com"
                 />
               </div>
@@ -449,73 +449,73 @@ export function CreateQRPage() {
               <>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">First Name</label>
+                    <label className="block text-sm font-medium text-white mb-2">First Name</label>
                     <input
                       type="text"
                       value={content.firstName || ''}
                       onChange={(e) => setContent({ ...content, firstName: e.target.value })}
-                      className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                      className="w-full px-4 py-3 bg-slate-900/60 border border-white/10 rounded-lg text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-cyan-400 focus:border-cyan-400"
                       placeholder="John"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Last Name</label>
+                    <label className="block text-sm font-medium text-white mb-2">Last Name</label>
                     <input
                       type="text"
                       value={content.lastName || ''}
                       onChange={(e) => setContent({ ...content, lastName: e.target.value })}
-                      className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                      className="w-full px-4 py-3 bg-slate-900/60 border border-white/10 rounded-lg text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-cyan-400 focus:border-cyan-400"
                       placeholder="Doe"
                     />
                   </div>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Phone</label>
+                  <label className="block text-sm font-medium text-white mb-2">Phone</label>
                   <input
                     type="tel"
                     value={content.phone || ''}
                     onChange={(e) => setContent({ ...content, phone: e.target.value })}
-                    className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    className="w-full px-4 py-3 bg-slate-900/60 border border-white/10 rounded-lg text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-cyan-400 focus:border-cyan-400"
                     placeholder="+1234567890"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
+                  <label className="block text-sm font-medium text-white mb-2">Email</label>
                   <input
                     type="email"
                     value={content.email || ''}
                     onChange={(e) => setContent({ ...content, email: e.target.value })}
-                    className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    className="w-full px-4 py-3 bg-slate-900/60 border border-white/10 rounded-lg text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-cyan-400 focus:border-cyan-400"
                     placeholder="john@example.com"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Company (optional)</label>
+                  <label className="block text-sm font-medium text-white mb-2">Company (optional)</label>
                   <input
                     type="text"
                     value={content.company || ''}
                     onChange={(e) => setContent({ ...content, company: e.target.value })}
-                    className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    className="w-full px-4 py-3 bg-slate-900/60 border border-white/10 rounded-lg text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-cyan-400 focus:border-cyan-400"
                     placeholder="Company Name"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Website (optional)</label>
+                  <label className="block text-sm font-medium text-white mb-2">Website (optional)</label>
                   <input
                     type="url"
                     value={content.website || ''}
                     onChange={(e) => setContent({ ...content, website: e.target.value })}
-                    className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    className="w-full px-4 py-3 bg-slate-900/60 border border-white/10 rounded-lg text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-cyan-400 focus:border-cyan-400"
                     placeholder="https://example.com"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Address (optional)</label>
+                  <label className="block text-sm font-medium text-white mb-2">Address (optional)</label>
                   <input
                     type="text"
                     value={content.address || ''}
                     onChange={(e) => setContent({ ...content, address: e.target.value })}
-                    className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    className="w-full px-4 py-3 bg-slate-900/60 border border-white/10 rounded-lg text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-cyan-400 focus:border-cyan-400"
                     placeholder="123 Main St, City, State"
                   />
                 </div>
@@ -525,31 +525,31 @@ export function CreateQRPage() {
             {selectedType === 'wifi' && (
               <>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Network Name (SSID)</label>
+                  <label className="block text-sm font-medium text-white mb-2">Network Name (SSID)</label>
                   <input
                     type="text"
                     value={content.ssid || ''}
                     onChange={(e) => setContent({ ...content, ssid: e.target.value })}
-                    className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    className="w-full px-4 py-3 bg-slate-900/60 border border-white/10 rounded-lg text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-cyan-400 focus:border-cyan-400"
                     placeholder="MyWiFi"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Password</label>
+                  <label className="block text-sm font-medium text-white mb-2">Password</label>
                   <input
                     type="text"
                     value={content.password || ''}
                     onChange={(e) => setContent({ ...content, password: e.target.value })}
-                    className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    className="w-full px-4 py-3 bg-slate-900/60 border border-white/10 rounded-lg text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-cyan-400 focus:border-cyan-400"
                     placeholder="WiFi password"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Encryption</label>
+                  <label className="block text-sm font-medium text-white mb-2">Encryption</label>
                   <select
                     value={content.encryption || 'WPA'}
                     onChange={(e) => setContent({ ...content, encryption: e.target.value })}
-                    className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    className="w-full px-4 py-3 bg-slate-900/60 border border-white/10 rounded-lg text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-cyan-400 focus:border-cyan-400"
                   >
                     <option value="WPA">WPA/WPA2</option>
                     <option value="WEP">WEP</option>
@@ -562,21 +562,21 @@ export function CreateQRPage() {
             {selectedType === 'whatsapp' && (
               <>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Phone Number</label>
+                  <label className="block text-sm font-medium text-white mb-2">Phone Number</label>
                   <input
                     type="tel"
                     value={content.phone || ''}
                     onChange={(e) => setContent({ ...content, phone: e.target.value })}
-                    className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    className="w-full px-4 py-3 bg-slate-900/60 border border-white/10 rounded-lg text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-cyan-400 focus:border-cyan-400"
                     placeholder="+1234567890"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Pre-filled Message (optional)</label>
+                  <label className="block text-sm font-medium text-white mb-2">Pre-filled Message (optional)</label>
                   <textarea
                     value={content.message || ''}
                     onChange={(e) => setContent({ ...content, message: e.target.value })}
-                    className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    className="w-full px-4 py-3 bg-slate-900/60 border border-white/10 rounded-lg text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-cyan-400 focus:border-cyan-400"
                     rows={3}
                     placeholder="Hello!"
                   />
@@ -586,12 +586,12 @@ export function CreateQRPage() {
 
             {selectedType === 'facebook' && (
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Facebook Page ID or Username</label>
+                <label className="block text-sm font-medium text-white mb-2">Facebook Page ID or Username</label>
                 <input
                   type="text"
                   value={content.pageId || ''}
                   onChange={(e) => setContent({ ...content, pageId: e.target.value })}
-                  className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  className="w-full px-4 py-3 bg-slate-900/60 border border-white/10 rounded-lg text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-cyan-400 focus:border-cyan-400"
                   placeholder="yourpage"
                 />
               </div>
@@ -599,12 +599,12 @@ export function CreateQRPage() {
 
             {selectedType === 'instagram' && (
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Instagram Username</label>
+                <label className="block text-sm font-medium text-white mb-2">Instagram Username</label>
                 <input
                   type="text"
                   value={content.username || ''}
                   onChange={(e) => setContent({ ...content, username: e.target.value })}
-                  className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  className="w-full px-4 py-3 bg-slate-900/60 border border-white/10 rounded-lg text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-cyan-400 focus:border-cyan-400"
                   placeholder="@yourusername"
                 />
               </div>
@@ -613,30 +613,30 @@ export function CreateQRPage() {
             {selectedType === 'pdf' && (
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Upload PDF</label>
+                  <label className="block text-sm font-medium text-white mb-2">Upload PDF</label>
                   <input
                     type="file"
                     accept=".pdf,application/pdf"
                     onChange={(e) => handleFileUpload(e, 'pdf')}
                     disabled={uploading}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:opacity-50"
+                    className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-400 focus:border-cyan-400 disabled:opacity-50"
                   />
                   {uploadProgress && (
                     <p className="text-sm text-green-600 mt-2">{uploadProgress}</p>
                   )}
                 </div>
                   <div className="flex items-center">
-                    <div className="flex-1 border-t border-gray-200"></div>
+                    <div className="flex-1 border-t border-slate-300"></div>
                     <span className="px-4 text-sm text-gray-500">OR</span>
-                    <div className="flex-1 border-t border-gray-200"></div>
+                    <div className="flex-1 border-t border-slate-300"></div>
                   </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">PDF URL</label>
+                  <label className="block text-sm font-medium text-white mb-2">PDF URL</label>
                   <input
                     type="url"
                     value={content.url || content.pdfUrl || ''}
                     onChange={(e) => setContent({ ...content, url: e.target.value, pdfUrl: e.target.value })}
-                    className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    className="w-full px-4 py-3 bg-slate-900/60 border border-white/10 rounded-lg text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-cyan-400 focus:border-cyan-400"
                     placeholder="https://example.com/document.pdf"
                   />
                 </div>
@@ -646,30 +646,30 @@ export function CreateQRPage() {
             {selectedType === 'images' && (
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Upload Image</label>
+                  <label className="block text-sm font-medium text-white mb-2">Upload Image</label>
                   <input
                     type="file"
                     accept="image/*"
                     onChange={(e) => handleFileUpload(e, 'images')}
                     disabled={uploading}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:opacity-50"
+                    className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-400 focus:border-cyan-400 disabled:opacity-50"
                   />
                   {uploadProgress && (
                     <p className="text-sm text-green-600 mt-2">{uploadProgress}</p>
                   )}
                 </div>
                   <div className="flex items-center">
-                    <div className="flex-1 border-t border-gray-200"></div>
+                    <div className="flex-1 border-t border-slate-300"></div>
                     <span className="px-4 text-sm text-gray-500">OR</span>
-                    <div className="flex-1 border-t border-gray-200"></div>
+                    <div className="flex-1 border-t border-slate-300"></div>
                   </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Image URL</label>
+                  <label className="block text-sm font-medium text-white mb-2">Image URL</label>
                   <input
                     type="url"
                     value={content.url || content.imageUrl || ''}
                     onChange={(e) => setContent({ ...content, url: e.target.value, imageUrl: e.target.value })}
-                    className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    className="w-full px-4 py-3 bg-slate-900/60 border border-white/10 rounded-lg text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-cyan-400 focus:border-cyan-400"
                     placeholder="https://example.com/image.jpg"
                   />
                   <p className="text-xs text-gray-600 mt-1">Enter URL to first image (more images can be added later)</p>
@@ -680,30 +680,30 @@ export function CreateQRPage() {
             {selectedType === 'video' && (
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Upload Video</label>
+                  <label className="block text-sm font-medium text-white mb-2">Upload Video</label>
                   <input
                     type="file"
                     accept="video/*"
                     onChange={(e) => handleFileUpload(e, 'video')}
                     disabled={uploading}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:opacity-50"
+                    className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-400 focus:border-cyan-400 disabled:opacity-50"
                   />
                   {uploadProgress && (
                     <p className="text-sm text-green-600 mt-2">{uploadProgress}</p>
                   )}
                 </div>
                   <div className="flex items-center">
-                    <div className="flex-1 border-t border-gray-200"></div>
+                    <div className="flex-1 border-t border-slate-300"></div>
                     <span className="px-4 text-sm text-gray-500">OR</span>
-                    <div className="flex-1 border-t border-gray-200"></div>
+                    <div className="flex-1 border-t border-slate-300"></div>
                   </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Video URL</label>
+                  <label className="block text-sm font-medium text-white mb-2">Video URL</label>
                   <input
                     type="url"
                     value={content.url || content.videoUrl || ''}
                     onChange={(e) => setContent({ ...content, url: e.target.value, videoUrl: e.target.value })}
-                    className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    className="w-full px-4 py-3 bg-slate-900/60 border border-white/10 rounded-lg text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-cyan-400 focus:border-cyan-400"
                     placeholder="https://youtube.com/watch?v=..."
                   />
                 </div>
@@ -712,12 +712,12 @@ export function CreateQRPage() {
 
             {selectedType === 'menu' && (
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Menu URL</label>
+                <label className="block text-sm font-medium text-white mb-2">Menu URL</label>
                 <input
                   type="url"
                   value={content.url || content.menuUrl || ''}
                   onChange={(e) => setContent({ ...content, url: e.target.value, menuUrl: e.target.value })}
-                  className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  className="w-full px-4 py-3 bg-slate-900/60 border border-white/10 rounded-lg text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-cyan-400 focus:border-cyan-400"
                   placeholder="https://example.com/menu"
                 />
               </div>
@@ -726,32 +726,32 @@ export function CreateQRPage() {
             {selectedType === 'business' && (
               <>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Business Name</label>
+                  <label className="block text-sm font-medium text-white mb-2">Business Name</label>
                   <input
                     type="text"
                     value={content.businessName || ''}
                     onChange={(e) => setContent({ ...content, businessName: e.target.value })}
-                    className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    className="w-full px-4 py-3 bg-slate-900/60 border border-white/10 rounded-lg text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-cyan-400 focus:border-cyan-400"
                     placeholder="My Business"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Website URL</label>
+                  <label className="block text-sm font-medium text-white mb-2">Website URL</label>
                   <input
                     type="url"
                     value={content.url || content.website || ''}
                     onChange={(e) => setContent({ ...content, url: e.target.value, website: e.target.value })}
-                    className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    className="w-full px-4 py-3 bg-slate-900/60 border border-white/10 rounded-lg text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-cyan-400 focus:border-cyan-400"
                     placeholder="https://mybusiness.com"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Phone</label>
+                  <label className="block text-sm font-medium text-white mb-2">Phone</label>
                   <input
                     type="tel"
                     value={content.phone || ''}
                     onChange={(e) => setContent({ ...content, phone: e.target.value })}
-                    className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    className="w-full px-4 py-3 bg-slate-900/60 border border-white/10 rounded-lg text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-cyan-400 focus:border-cyan-400"
                     placeholder="+1234567890"
                   />
                 </div>
@@ -761,30 +761,30 @@ export function CreateQRPage() {
             {selectedType === 'mp3' && (
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Upload Audio File</label>
+                  <label className="block text-sm font-medium text-white mb-2">Upload Audio File</label>
                   <input
                     type="file"
                     accept="audio/*,.mp3"
                     onChange={(e) => handleFileUpload(e, 'mp3')}
                     disabled={uploading}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:opacity-50"
+                    className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-400 focus:border-cyan-400 disabled:opacity-50"
                   />
                   {uploadProgress && (
                     <p className="text-sm text-green-600 mt-2">{uploadProgress}</p>
                   )}
                 </div>
                   <div className="flex items-center">
-                    <div className="flex-1 border-t border-gray-200"></div>
+                    <div className="flex-1 border-t border-slate-300"></div>
                     <span className="px-4 text-sm text-gray-500">OR</span>
-                    <div className="flex-1 border-t border-gray-200"></div>
+                    <div className="flex-1 border-t border-slate-300"></div>
                   </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Audio File URL</label>
+                  <label className="block text-sm font-medium text-white mb-2">Audio File URL</label>
                   <input
                     type="url"
                     value={content.url || content.audioUrl || ''}
                     onChange={(e) => setContent({ ...content, url: e.target.value, audioUrl: e.target.value })}
-                    className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    className="w-full px-4 py-3 bg-slate-900/60 border border-white/10 rounded-lg text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-cyan-400 focus:border-cyan-400"
                     placeholder="https://example.com/audio.mp3"
                   />
                 </div>
@@ -794,26 +794,26 @@ export function CreateQRPage() {
             {selectedType === 'apps' && (
               <>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">App Store</label>
+                  <label className="block text-sm font-medium text-white mb-2">App Store</label>
                   <select
                     value={content.store || 'ios'}
                     onChange={(e) => {
                       const value = e.target.value;
                       setContent({ ...content, store: (value === 'ios' || value === 'android') ? value : 'ios' });
                     }}
-                    className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    className="w-full px-4 py-3 bg-slate-900/60 border border-white/10 rounded-lg text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-cyan-400 focus:border-cyan-400"
                   >
                     <option value="ios">Apple App Store</option>
                     <option value="android">Google Play Store</option>
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">App ID</label>
+                  <label className="block text-sm font-medium text-white mb-2">App ID</label>
                   <input
                     type="text"
                     value={content.appId || ''}
                     onChange={(e) => setContent({ ...content, appId: e.target.value })}
-                    className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    className="w-full px-4 py-3 bg-slate-900/60 border border-white/10 rounded-lg text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-cyan-400 focus:border-cyan-400"
                     placeholder="123456789"
                   />
                   <p className="text-xs text-gray-600 mt-1">Enter the app ID from the store</p>
@@ -824,22 +824,22 @@ export function CreateQRPage() {
             {selectedType === 'coupon' && (
               <>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Coupon Code</label>
+                  <label className="block text-sm font-medium text-white mb-2">Coupon Code</label>
                   <input
                     type="text"
                     value={content.code || ''}
                     onChange={(e) => setContent({ ...content, code: e.target.value })}
-                    className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    className="w-full px-4 py-3 bg-slate-900/60 border border-white/10 rounded-lg text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-cyan-400 focus:border-cyan-400"
                     placeholder="SAVE20"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Coupon URL (optional)</label>
+                  <label className="block text-sm font-medium text-white mb-2">Coupon URL (optional)</label>
                   <input
                     type="url"
                     value={content.url || ''}
                     onChange={(e) => setContent({ ...content, url: e.target.value })}
-                    className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    className="w-full px-4 py-3 bg-slate-900/60 border border-white/10 rounded-lg text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-cyan-400 focus:border-cyan-400"
                     placeholder="https://example.com/redeem"
                   />
                 </div>
@@ -849,42 +849,42 @@ export function CreateQRPage() {
             {selectedType === 'social' && (
               <>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Facebook URL (optional)</label>
+                  <label className="block text-sm font-medium text-white mb-2">Facebook URL (optional)</label>
                   <input
                     type="url"
                     value={content.facebookUrl || ''}
                     onChange={(e) => setContent({ ...content, facebookUrl: e.target.value })}
-                    className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    className="w-full px-4 py-3 bg-slate-900/60 border border-white/10 rounded-lg text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-cyan-400 focus:border-cyan-400"
                     placeholder="https://facebook.com/yourpage"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Instagram URL (optional)</label>
+                  <label className="block text-sm font-medium text-white mb-2">Instagram URL (optional)</label>
                   <input
                     type="url"
                     value={content.instagramUrl || ''}
                     onChange={(e) => setContent({ ...content, instagramUrl: e.target.value })}
-                    className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    className="w-full px-4 py-3 bg-slate-900/60 border border-white/10 rounded-lg text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-cyan-400 focus:border-cyan-400"
                     placeholder="https://instagram.com/yourprofile"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Twitter/X URL (optional)</label>
+                  <label className="block text-sm font-medium text-white mb-2">Twitter/X URL (optional)</label>
                   <input
                     type="url"
                     value={content.twitterUrl || ''}
                     onChange={(e) => setContent({ ...content, twitterUrl: e.target.value })}
-                    className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    className="w-full px-4 py-3 bg-slate-900/60 border border-white/10 rounded-lg text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-cyan-400 focus:border-cyan-400"
                     placeholder="https://twitter.com/yourhandle"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Primary URL</label>
+                  <label className="block text-sm font-medium text-white mb-2">Primary URL</label>
                   <input
                     type="url"
                     value={content.url || ''}
                     onChange={(e) => setContent({ ...content, url: e.target.value })}
-                    className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    className="w-full px-4 py-3 bg-slate-900/60 border border-white/10 rounded-lg text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-cyan-400 focus:border-cyan-400"
                     placeholder="https://yourwebsite.com"
                   />
                   <p className="text-xs text-gray-600 mt-1">Enter at least one social media URL or your website</p>
@@ -926,7 +926,7 @@ export function CreateQRPage() {
                     </div>
                   )}
                   
-                  <div className="border-2 border-dashed border-purple-300 rounded-lg p-4 bg-purple-50">
+                  <div className="border-2 border-dashed border-cyan-300 rounded-lg p-4 bg-cyan-50">
                     <h4 className="text-sm font-semibold text-gray-900 mb-3">Add New Link</h4>
                     <div className="space-y-3">
                       <div>
@@ -989,7 +989,7 @@ export function CreateQRPage() {
                               urlInput.value = '';
                               setError('');
                             }}
-                            className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-medium text-sm transition"
+                            className="px-4 py-2 bg-cyan-400 hover:bg-cyan-300 text-slate-900 rounded-lg font-medium text-sm transition"
                           >
                             Add
                           </button>
@@ -1024,7 +1024,7 @@ export function CreateQRPage() {
                     type="checkbox"
                     checked={enableTracking}
                     onChange={(e) => setEnableTracking(e.target.checked)}
-                    className="w-12 h-6 rounded-full bg-gray-300 checked:bg-purple-600 transition relative appearance-none cursor-pointer
+                    className="w-12 h-6 rounded-full bg-gray-300 checked:bg-cyan-400 transition relative appearance-none cursor-pointer
                     before:absolute before:left-1 before:top-1 before:w-4 before:h-4 before:bg-white before:rounded-full before:transition-all
                     checked:before:left-7"
                   />
@@ -1033,17 +1033,17 @@ export function CreateQRPage() {
             </div>
 
             <div className="flex items-center justify-between pt-6">
-              <button
-                onClick={() => setStep(1)}
-                className="flex items-center space-x-2 px-6 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition text-gray-700"
-              >
-                <ArrowLeft className="w-5 h-5" />
-                <span>Back</span>
-              </button>
+            <button
+              onClick={() => setStep(1)}
+              className="flex items-center space-x-2 px-6 py-3 border border-white/10 rounded-lg hover:bg-white/10 transition text-white/70 hover:text-white"
+            >
+              <ArrowLeft className="w-5 h-5" />
+              <span>Back</span>
+            </button>
               <button
                 onClick={handleCreateQR}
                 disabled={loading}
-                className="flex items-center space-x-2 px-6 py-3 bg-purple-600 hover:bg-purple-700 disabled:bg-purple-400 text-white rounded-lg transition"
+                className="flex items-center space-x-2 px-6 py-3 bg-cyan-400 hover:bg-cyan-300 disabled:bg-cyan-400/50 text-slate-900 rounded-lg transition"
               >
                 {loading ? 'Creating...' : 'Generate QR Code'}
                 <ArrowRight className="w-5 h-5" />
@@ -1572,63 +1572,44 @@ export function CreateQRPage() {
   };
 
   return (
-    <div className={`min-h-screen ${
-      usePremiumTheme && step === 3
-        ? 'bg-gradient-to-br from-slate-950 via-slate-900 to-slate-800 text-white'
-        : 'bg-gray-50 text-gray-900'
-    }`}>
-      {usePremiumTheme && step === 3 && (
-        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_center,_rgba(56,189,248,0.08),_transparent_60%)]" />
-      )}
-      <div className={`container mx-auto px-4 sm:px-6 py-8 sm:py-12 ${usePremiumTheme && step === 3 ? 'relative' : ''}`}>
+    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-800 text-white relative">
+      {/* Radial gradient overlay */}
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_center,_rgba(56,189,248,0.08),_transparent_60%)]" />
+      
+      <div className="container mx-auto px-4 sm:px-6 py-8 sm:py-12 relative z-10">
         <div className="max-w-5xl mx-auto">
           {/* Header */}
           <div className="mb-8 sm:mb-10">
             <button
               onClick={() => navigate('/dashboard')}
-              className={`flex items-center space-x-2 mb-4 text-sm sm:text-base ${
-                usePremiumTheme && step === 3
-                  ? 'text-cyan-400 hover:text-cyan-300'
-                  : 'text-gray-600 hover:text-gray-900'
-              }`}
+              className="flex items-center space-x-2 mb-4 text-sm sm:text-base text-cyan-400 hover:text-cyan-300"
             >
               <ArrowLeft className="w-5 h-5" />
               <span>Back to Dashboard</span>
             </button>
-            <h1 className={`text-3xl sm:text-4xl font-bold text-balance ${
-              usePremiumTheme && step === 3 ? 'text-white' : 'text-gray-900'
-            }`}>
+            <h1 className="text-3xl sm:text-4xl font-bold text-balance text-white">
               Create QR Code
             </h1>
           </div>
 
           {/* Progress Steps */}
           <div className="flex items-center justify-center mb-8 sm:mb-10 space-x-4">
-            <div className={`flex items-center space-x-2 ${step >= 1 ? 'text-purple-600' : 'text-gray-400'}`}>
+            <div className={`flex items-center space-x-2 ${step >= 1 ? 'text-cyan-400' : 'text-white/40'}`}>
               <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                step >= 1 ? 'bg-purple-600 text-white' : 'bg-gray-200'
+                step >= 1 ? 'bg-cyan-400 text-slate-900' : 'bg-white/10'
               }`}>
                 1
               </div>
               <span className="font-medium hidden md:inline">Type of QR code</span>
             </div>
-            <div className="w-12 border-t-2 border-gray-200"></div>
-            <div className={`flex items-center space-x-2 ${step >= 2 ? 'text-purple-600' : 'text-gray-400'}`}>
+            <div className="w-12 border-t-2 border-white/20"></div>
+            <div className={`flex items-center space-x-2 ${step >= 2 ? 'text-cyan-400' : 'text-white/40'}`}>
               <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                step >= 2 ? 'bg-purple-600 text-white' : 'bg-gray-200'
+                step >= 2 ? 'bg-cyan-400 text-slate-900' : 'bg-white/10'
               }`}>
                 2
               </div>
               <span className="font-medium hidden md:inline">Content</span>
-            </div>
-            <div className="w-12 border-t-2 border-gray-200"></div>
-            <div className={`flex items-center space-x-2 ${step >= 3 ? 'text-purple-600' : 'text-gray-400'}`}>
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                step >= 3 ? 'bg-purple-600 text-white' : 'bg-gray-200'
-              }`}>
-                3
-              </div>
-              <span className="font-medium hidden md:inline">Activate subscription</span>
             </div>
           </div>
 
@@ -1682,14 +1663,10 @@ export function CreateQRPage() {
           )}
 
           {/* Content */}
-          <div className={`rounded-2xl shadow-lg p-6 sm:p-8 ${
-            usePremiumTheme && step === 3
-              ? 'bg-slate-900/80 border border-white/10'
-              : 'bg-white border border-gray-200'
-          }`}>
+          <div className="rounded-2xl shadow-2xl p-6 sm:p-8 bg-slate-900/80 border border-white/10 backdrop-blur-md">
             {!subscriptionChecked ? (
               <div className="text-center py-8">
-                <p className={usePremiumTheme && step === 3 ? 'text-white/70' : 'text-gray-600'}>
+                <p className="text-white/70">
                   Checking subscription status...
                 </p>
               </div>
@@ -1700,8 +1677,8 @@ export function CreateQRPage() {
 
           {/* Mobile Preview */}
           {step === 2 && (
-            <div className="mt-8 bg-white border border-gray-200 rounded-2xl shadow-lg p-6 sm:p-8">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Live Preview</h3>
+            <div className="mt-8 bg-slate-900/80 border border-white/10 backdrop-blur-md rounded-2xl shadow-2xl p-6 sm:p-8">
+              <h3 className="text-lg font-semibold text-white mb-4">Live Preview</h3>
               <div className="flex justify-center">
                 <div className="relative">
                   <Phone className="w-64 h-auto text-gray-300" />

@@ -12,6 +12,7 @@ import { AuthErrorPage } from './pages/AuthErrorPage';
 import { DashboardPage } from './pages/DashboardPage';
 import { CreateQRPage } from './pages/CreateQRPage';
 import { AnalyticsPage } from './pages/AnalyticsPage';
+import { QRDetailPage } from './pages/QRDetailPage';
 import { AccountPage } from './pages/AccountPage';
 import { BillingPage } from './pages/BillingPage';
 import { FAQPage } from './pages/FAQPage';
@@ -75,6 +76,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <AnalyticsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/qr/:id"
+            element={
+              <ProtectedRoute>
+                <QRDetailPage />
               </ProtectedRoute>
             }
           />

@@ -19,8 +19,12 @@ import {
   MoreVertical,
   Menu,
   X,
-  Power
+  Power,
+  Lock,
+  Trash2,
+  Copy
 } from 'lucide-react';
+import { createCheckoutSession } from '../lib/stripe';
 
 interface QRCodeItem {
   id: string;
@@ -64,6 +68,8 @@ export function DashboardPage() {
   const [hasActiveSubscription, setHasActiveSubscription] = useState<boolean>(false);
   const [subscriptionVerified, setSubscriptionVerified] = useState<boolean>(false); // Track if we've verified
   const [mountKey, setMountKey] = useState(0); // Force remount key
+  const [checkoutLoading, setCheckoutLoading] = useState(false);
+  const [openMenuId, setOpenMenuId] = useState<string | null>(null);
 
   // Effect that runs when user or location changes (including navigation)
   useEffect(() => {
@@ -353,10 +359,24 @@ export function DashboardPage() {
   }
 
   async function handleDownloadQR(qrImageUrl: string, qrName: string) {
-    // Double-check subscription status before allowing download
     if (!user) {
       alert('Please log in to download QR codes.');
       navigate('/login');
+      return;
+    }
+
+    // Check subscription status before allowing download
+    if (!hasActiveSubscription) {
+      const subscribe = window.confirm('You need an active subscription to download QR codes. Would you like to subscribe now?');
+      if (subscribe) {
+        setCheckoutLoading(true);
+        try {
+          await createCheckoutSession(user.id);
+        } catch (err) {
+          console.error('Checkout error:', err);
+          setCheckoutLoading(false);
+        }
+      }
       return;
     }
 
@@ -408,6 +428,56 @@ export function DashboardPage() {
     }
   }
 
+  async function handleDeleteQR(qrId: string, qrName: string) {
+    if (!window.confirm(`Are you sure you want to delete "${qrName}"? This action cannot be undone.`)) {
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('qr_codes')
+        .delete()
+        .eq('id', qrId)
+        .eq('user_id', user!.id);
+
+      if (error) throw error;
+
+      // Reload QR codes to reflect changes
+      loadQRCodes();
+      setOpenMenuId(null);
+    } catch (error) {
+      console.error('Delete error:', error);
+      alert('Failed to delete QR code. Please try again.');
+    }
+  }
+
+  async function handleCopyLink(qrId: string) {
+    try {
+      // Get the QR code URL - this would be the public URL if you have one
+      // For now, we'll copy the dashboard URL or the QR detail URL
+      const qrUrl = `${window.location.origin}/qr/${qrId}`;
+      await navigator.clipboard.writeText(qrUrl);
+      setOpenMenuId(null);
+    } catch (error) {
+      console.error('Copy error:', error);
+      alert('Failed to copy link. Please try again.');
+    }
+  }
+
+  // Close menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (openMenuId) {
+        setOpenMenuId(null);
+      }
+    };
+
+    if (openMenuId) {
+      document.addEventListener('click', handleClickOutside);
+      return () => document.removeEventListener('click', handleClickOutside);
+    }
+  }, [openMenuId]);
+
   const sidebarItems = [
     { icon: Plus, label: 'Create QR Code', path: '/create-qr' },
     { icon: BarChart3, label: 'Analytics', path: '/analytics' },
@@ -417,20 +487,23 @@ export function DashboardPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50 text-gray-900 flex">
+    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-800 text-white flex relative">
+      {/* Radial gradient overlay */}
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_center,_rgba(56,189,248,0.08),_transparent_60%)]" />
+      
       {/* Sidebar */}
       <aside
         className={`
-          fixed lg:static inset-y-0 left-0 z-40 w-64 bg-white border-r border-gray-200 transform transition-transform duration-300 ease-in-out
+          fixed lg:static inset-y-0 left-0 z-40 w-64 bg-slate-900/80 border-r border-white/10 backdrop-blur-md transform transition-transform duration-300 ease-in-out relative
           ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
         `}
       >
         <div className="flex flex-col h-full">
           {/* Logo */}
-          <div className="p-6 border-b border-gray-200">
+          <div className="p-6 border-b border-white/10">
             <Link to="/dashboard" className="flex items-center space-x-2">
-              <QrCode className="w-8 h-8 text-purple-600" />
-              <span className="text-xl font-bold text-gray-900">generatecodeqr</span>
+              <QrCode className="w-8 h-8 text-cyan-400" />
+              <span className="text-xl font-bold text-white">generatecodeqr</span>
             </Link>
           </div>
 
@@ -442,8 +515,8 @@ export function DashboardPage() {
                 to={item.path}
                 className={`flex items-center space-x-3 px-4 py-3 rounded-lg transition ${
                   item.active
-                    ? 'bg-purple-100 text-purple-700'
-                    : 'text-gray-600 hover:bg-gray-100'
+                    ? 'bg-cyan-400/20 text-cyan-400 border border-cyan-400/30'
+                    : 'text-white/70 hover:bg-white/10 hover:text-white'
                 }`}
               >
                 <item.icon className="w-5 h-5" />
@@ -454,14 +527,14 @@ export function DashboardPage() {
 
           {/* Subscription Status */}
           {subscription?.status !== 'active' && (
-            <div className="p-4 border-t border-gray-200">
-              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-                <p className="text-sm font-semibold text-yellow-900 mb-2">
+            <div className="p-4 border-t border-white/10">
+              <div className="bg-slate-800/60 border border-white/10 rounded-lg p-4">
+                <p className="text-sm font-semibold text-white mb-2">
                   Subscription Required
                 </p>
                 <Link
                   to="/billing"
-                  className="block w-full bg-purple-600 hover:bg-purple-700 text-white text-center py-2 rounded-lg text-sm font-medium transition"
+                  className="block w-full bg-cyan-400 hover:bg-cyan-300 text-slate-900 text-center py-2 rounded-lg text-sm font-medium transition"
                 >
                   Subscribe Now - $5/month
                 </Link>
@@ -475,28 +548,28 @@ export function DashboardPage() {
       {/* Main Content */}
       <div className="flex-1 overflow-auto">
         {/* Header */}
-        <header className="bg-white border-b border-gray-200 px-6 py-4">
+        <header className="bg-slate-900/80 border-b border-white/10 backdrop-blur-md px-6 py-4 relative">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
               <button
                 onClick={() => setSidebarOpen(!sidebarOpen)}
-                className="lg:hidden text-gray-600 hover:text-gray-900"
+                className="lg:hidden text-white/70 hover:text-white"
               >
                 {sidebarOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
               </button>
-              <h1 className="text-2xl font-bold text-gray-900">My QR Codes</h1>
+              <h1 className="text-2xl font-bold text-white">My QR Codes</h1>
             </div>
             <div className="flex items-center space-x-3">
               <Link
                 to="/create-qr"
-                className="flex items-center space-x-2 bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg transition"
+                className="flex items-center space-x-2 bg-cyan-400 hover:bg-cyan-300 text-slate-900 px-4 py-2 rounded-lg transition"
               >
                 <Plus className="w-5 h-5" />
                 <span className="hidden md:inline">Create QR Code</span>
               </Link>
               <button
                 onClick={handleSignOut}
-                className="flex items-center space-x-2 px-4 py-2 text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition"
+                className="flex items-center space-x-2 px-4 py-2 text-white/70 hover:text-white hover:bg-white/10 rounded-lg transition"
                 title="Log Out"
               >
                 <LogOut className="w-5 h-5" />
@@ -507,23 +580,23 @@ export function DashboardPage() {
         </header>
 
         {/* Search and Filters */}
-        <div className="px-6 py-4 bg-white border-b border-gray-200">
+        <div className="px-6 py-4 bg-slate-900/80 border-b border-white/10 backdrop-blur-md relative">
           <div className="flex flex-col md:flex-row md:items-center space-y-3 md:space-y-0 md:space-x-4">
             <div className="flex-1 relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-white/40 w-5 h-5" />
               <input
                 type="text"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 placeholder="Search QR codes..."
-                className="w-full pl-10 pr-4 py-2 bg-white border border-gray-300 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                className="w-full pl-10 pr-4 py-2 bg-slate-900/60 border border-white/10 rounded-lg text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-cyan-400 focus:border-cyan-400"
               />
             </div>
             <div className="flex items-center space-x-2">
               <select 
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
-                className="px-4 py-2 bg-white border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                className="px-4 py-2 bg-slate-900/60 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-cyan-400 focus:border-cyan-400"
               >
                 <option>All Status</option>
                 <option>Active</option>
@@ -532,7 +605,7 @@ export function DashboardPage() {
               <select 
                 value={typeFilter}
                 onChange={(e) => setTypeFilter(e.target.value)}
-                className="px-4 py-2 bg-white border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                className="px-4 py-2 bg-slate-900/60 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-cyan-400 focus:border-cyan-400"
               >
                 <option>All Types</option>
                 <option>Website</option>
@@ -546,72 +619,57 @@ export function DashboardPage() {
         {/* QR Codes Grid */}
         <div className="p-6">
           {loading ? (
-            <div className="text-center py-12">
-              <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-purple-600 border-t-transparent"></div>
-              <p className="mt-4 text-gray-600">Loading QR codes...</p>
+            <div className="text-center py-12 relative">
+              <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-cyan-400 border-t-transparent"></div>
+              <p className="mt-4 text-white/70">Loading QR codes...</p>
             </div>
           ) : filteredQRCodes.length === 0 ? (
-            <div className="text-center py-12">
-              <QrCode className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-              <h3 className="text-xl font-semibold text-gray-600 mb-2">No QR codes yet</h3>
-              <p className="text-gray-500 mb-6">Create your first QR code to get started</p>
+            <div className="text-center py-12 relative">
+              <QrCode className="w-16 h-16 text-white/30 mx-auto mb-4" />
+              <h3 className="text-xl font-semibold text-white mb-2">No QR codes yet</h3>
+              <p className="text-white/70 mb-6">Create your first QR code to get started</p>
               <Link
                 to="/create-qr"
-                className="inline-flex items-center space-x-2 bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-lg transition"
+                className="inline-flex items-center space-x-2 bg-cyan-400 hover:bg-cyan-300 text-slate-900 px-6 py-3 rounded-lg transition"
               >
                 <Plus className="w-5 h-5" />
                 <span>Create QR Code</span>
               </Link>
             </div>
           ) : (
-            <div className="grid gap-6">
+            <div className="grid gap-6 relative">
               {filteredQRCodes.map((qr) => (
-                <div key={qr.id} className="bg-white rounded-lg border border-gray-200 p-6 hover:shadow-lg transition">
+                <div key={qr.id} className="bg-slate-900/80 border border-white/10 backdrop-blur-md rounded-2xl p-6 hover:shadow-2xl transition hover:border-cyan-400/50 cursor-pointer" onClick={() => navigate(`/qr/${qr.id}`)}>
                   <div className="flex items-start space-x-4">
                     {/* QR Code Image */}
                     <div className="flex-shrink-0 relative">
                       {qr.qr_image_url ? (
-                        <div className="relative">
-                          {/* CRITICAL SECURITY: Never show QR code without active subscription */}
-                          {/* Only render clear image if subscription is verified AND active */}
-                          {subscriptionVerified && hasActiveSubscription ? (
+                        hasActiveSubscription ? (
+                          <img
+                            src={qr.qr_image_url}
+                            alt={qr.name || 'QR Code'}
+                            className="w-24 h-24 rounded-lg border border-white/10 transition"
+                          />
+                        ) : (
+                          <div className="relative">
                             <img
                               src={qr.qr_image_url}
                               alt={qr.name || 'QR Code'}
-                              className="w-24 h-24 rounded-lg border border-gray-200 transition"
+                              className="w-24 h-24 rounded-lg border border-white/10 transition blur-md opacity-50"
+                              style={{
+                                filter: 'blur(12px)',
+                                pointerEvents: 'none'
+                              }}
                             />
-                          ) : (
-                            <>
-                              {/* Always show blurred version if no subscription or not verified */}
-                              <img
-                                src={qr.qr_image_url}
-                                alt={qr.name || 'QR Code'}
-                                className="w-24 h-24 rounded-lg border border-gray-200 transition blur-md"
-                                style={{
-                                  // Force blur via inline style as backup
-                                  filter: 'blur(12px)',
-                                  pointerEvents: 'none',
-                                  opacity: 0.5
-                                }}
-                              />
-                              {/* Always show overlay if no active subscription */}
-                              <button
-                                onClick={() => navigate('/billing')}
-                                className="absolute inset-0 flex items-center justify-center bg-white/80 rounded-lg hover:bg-white/90 transition cursor-pointer z-10"
-                                title="Subscribe to unlock QR code downloads"
-                                style={{ zIndex: 10 }}
-                              >
-                                <div className="text-center px-2">
-                                  <p className="text-xs font-semibold text-gray-700">Subscribe</p>
-                                  <p className="text-xs text-gray-600">to unlock</p>
-                                </div>
-                              </button>
-                            </>
-                          )}
-                        </div>
+                            {/* Lock Overlay */}
+                            <div className="absolute inset-0 flex items-center justify-center bg-slate-900/90 rounded-lg border border-white/10">
+                              <Lock className="w-6 h-6 text-cyan-400" />
+                            </div>
+                          </div>
+                        )
                       ) : (
-                        <div className="w-24 h-24 rounded-lg border border-gray-200 bg-gray-100 flex items-center justify-center">
-                          <QrCode className="w-8 h-8 text-gray-400" />
+                        <div className="w-24 h-24 rounded-lg border border-white/10 bg-slate-800 flex items-center justify-center">
+                          <QrCode className="w-8 h-8 text-white/30" />
                         </div>
                       )}
                     </div>
@@ -620,56 +678,116 @@ export function DashboardPage() {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-start justify-between">
                         <div>
-                          <h3 className="text-lg font-semibold text-gray-800 truncate">{qr.name || 'Unnamed QR Code'}</h3>
-                          <p className="text-sm text-gray-500 mt-1">
+                          <h3 className="text-lg font-semibold text-white truncate">{qr.name || 'Unnamed QR Code'}</h3>
+                          <p className="text-sm text-white/70 mt-1">
                             {qr.type ? (qr.type.charAt(0).toUpperCase() + qr.type.slice(1)) : 'Unknown Type'}
                           </p>
-                          <p className="text-xs text-gray-400 mt-1">
+                          <p className="text-xs text-white/50 mt-1">
                             Created {qr.created_at ? new Date(qr.created_at).toLocaleDateString() : 'Unknown date'}
                           </p>
                         </div>
-                        <button className="text-gray-400 hover:text-gray-600">
-                          <MoreVertical className="w-5 h-5" />
-                        </button>
+                        <div className="relative">
+                          <button 
+                            className="text-white/40 hover:text-white/70 p-1 rounded-lg hover:bg-white/10 transition" 
+                            onClick={(e) => { 
+                              e.stopPropagation(); 
+                              setOpenMenuId(openMenuId === qr.id ? null : qr.id);
+                            }}
+                          >
+                            <MoreVertical className="w-5 h-5" />
+                          </button>
+                          
+                          {/* Dropdown Menu */}
+                          {openMenuId === qr.id && (
+                            <div className="absolute right-0 top-10 z-50 bg-slate-800 border border-white/10 rounded-lg shadow-2xl min-w-[180px] py-2">
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleCopyLink(qr.id);
+                                }}
+                                className="w-full flex items-center space-x-2 px-4 py-2 text-sm text-white/70 hover:bg-white/10 hover:text-white transition text-left"
+                              >
+                                <Copy className="w-4 h-4" />
+                                <span>Copy Link</span>
+                              </button>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  navigate(`/qr/${qr.id}`);
+                                  setOpenMenuId(null);
+                                }}
+                                className="w-full flex items-center space-x-2 px-4 py-2 text-sm text-white/70 hover:bg-white/10 hover:text-white transition text-left"
+                              >
+                                <Eye className="w-4 h-4" />
+                                <span>View Details</span>
+                              </button>
+                              <div className="border-t border-white/10 my-1"></div>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleDeleteQR(qr.id, qr.name);
+                                }}
+                                className="w-full flex items-center space-x-2 px-4 py-2 text-sm text-red-400 hover:bg-red-400/10 transition text-left"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                                <span>Delete</span>
+                              </button>
+                            </div>
+                          )}
+                        </div>
                       </div>
 
                       {qr.is_tracked !== false && qr.scan_count > 0 && (
                         <div className="mt-4 flex items-center space-x-4">
-                          <div className="flex items-center text-sm text-gray-600">
-                            <BarChart3 className="w-4 h-4 mr-1 text-purple-600" />
+                          <div className="flex items-center text-sm text-white/70">
+                            <BarChart3 className="w-4 h-4 mr-1 text-cyan-400" />
                             <span className="font-medium">{qr.scan_count} scans</span>
                           </div>
                         </div>
                       )}
 
-                      <div className="mt-4 flex items-center space-x-2 flex-wrap gap-2">
+                      <div className="mt-4 flex items-center space-x-2 flex-wrap gap-2" onClick={(e) => e.stopPropagation()}>
                         {qr.qr_image_url && (
-                          <button
-                            onClick={() => {
-                              if (!hasActiveSubscription) {
-                                navigate('/billing');
-                                return;
-                              }
-                              handleDownloadQR(qr.qr_image_url, qr.name);
-                            }}
-                            disabled={!hasActiveSubscription}
-                            className={`flex items-center space-x-1 px-3 py-2 rounded-lg transition text-sm font-medium ${
-                              hasActiveSubscription
-                                ? 'bg-purple-100 text-purple-700 hover:bg-purple-200'
-                                : 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                            }`}
-                            title={!hasActiveSubscription ? 'Subscribe to download QR codes' : 'Download QR code'}
-                          >
-                            <Download className="w-4 h-4" />
-                            <span>Download</span>
-                          </button>
+                          hasActiveSubscription ? (
+                            <button
+                              onClick={() => handleDownloadQR(qr.qr_image_url, qr.name)}
+                              className="flex items-center space-x-1 px-3 py-2 rounded-lg transition text-sm font-medium bg-cyan-400/20 text-cyan-400 hover:bg-cyan-400/30 border border-cyan-400/30"
+                              title="Download QR code"
+                            >
+                              <Download className="w-4 h-4" />
+                              <span>Download</span>
+                            </button>
+                          ) : (
+                            <button
+                              onClick={async () => {
+                                if (!user) {
+                                  navigate('/login');
+                                  return;
+                                }
+                                
+                                setCheckoutLoading(true);
+                                try {
+                                  await createCheckoutSession(user.id);
+                                } catch (err) {
+                                  console.error('Checkout error:', err);
+                                  setCheckoutLoading(false);
+                                }
+                              }}
+                              disabled={checkoutLoading}
+                              className="flex items-center space-x-1 px-3 py-2 rounded-lg transition text-sm font-medium bg-cyan-400/20 text-cyan-400 hover:bg-cyan-400/30 border border-cyan-400/30 disabled:opacity-50 disabled:cursor-not-allowed"
+                              title="Subscribe to download QR codes"
+                            >
+                              <Lock className="w-4 h-4" />
+                              <span>{checkoutLoading ? 'Loading...' : 'Subscribe'}</span>
+                            </button>
+                          )
                         )}
                         <button
                           onClick={() => handleToggleActive(qr.id, qr.is_active !== false)}
-                          className={`flex items-center space-x-1 px-3 py-2 rounded-lg transition text-sm font-medium ${
+                          className={`flex items-center space-x-1 px-3 py-2 rounded-lg transition text-sm font-medium border ${
                             qr.is_active !== false
-                              ? 'bg-green-100 text-green-700 hover:bg-green-200'
-                              : 'bg-orange-100 text-orange-700 hover:bg-orange-200'
+                              ? 'bg-green-400/20 text-green-400 hover:bg-green-400/30 border-green-400/30'
+                              : 'bg-orange-400/20 text-orange-400 hover:bg-orange-400/30 border-orange-400/30'
                           }`}
                         >
                           <Power className="w-4 h-4" />
@@ -678,10 +796,11 @@ export function DashboardPage() {
                         {qr.is_tracked !== false && (
                           <Link
                             to={`/analytics/${qr.id}`}
-                            className="flex items-center space-x-1 px-3 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition text-sm font-medium"
+                            className="flex items-center space-x-1 px-3 py-2 bg-white/10 text-white/70 rounded-lg hover:bg-white/20 transition text-sm font-medium border border-white/10"
+                            onClick={(e) => e.stopPropagation()}
                           >
-                            <Eye className="w-4 h-4" />
-                            <span>View Details</span>
+                            <BarChart3 className="w-4 h-4" />
+                            <span>Analytics</span>
                           </Link>
                         )}
                       </div>
