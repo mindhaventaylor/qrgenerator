@@ -1,12 +1,8 @@
 import { useState, useEffect } from 'react';
-import { useNavigate, Link, useSearchParams } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { createQRCode, uploadFile, buildQRData, QRContent } from '../lib/qrGenerator';
-import { checkSubscriptionStatus } from '../lib/subscriptionCheck';
-import { createCheckoutSession } from '../lib/stripe';
 import { useSEO } from '../hooks/useSEO';
-import { getLandingVariantOrDefault } from '../utils/variantUtils';
-import { checkoutVariants } from '../utils/checkoutVariants';
 import {
   Globe,
   FileText,
@@ -70,16 +66,10 @@ export function CreateQRPage() {
   const [content, setContent] = useState<QRContent>({});
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [subscriptionChecked, setSubscriptionChecked] = useState(false);
-  const [canCreateQR, setCanCreateQR] = useState(false);
-  const [subscriptionMessage, setSubscriptionMessage] = useState('');
   const [enableTracking, setEnableTracking] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState('');
   const [previewUrl, setPreviewUrl] = useState('');
-  const [qrCodeImageUrl, setQrCodeImageUrl] = useState(''); // Generated QR code image URL
-  const [showPaywall, setShowPaywall] = useState(false);
-  const [checkoutLoading, setCheckoutLoading] = useState(false);
   const { user } = useAuth();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -148,88 +138,6 @@ export function CreateQRPage() {
     }
   }
 
-  // Check for payment success/cancel in URL params
-  useEffect(() => {
-    const paymentStatus = searchParams.get('payment');
-    if (paymentStatus === 'success') {
-      // Payment successful - verify subscription and show success message
-      if (user) {
-        checkSubscriptionStatus(user.id).then(status => {
-          setCanCreateQR(status.canCreateQR);
-          setSubscriptionMessage(status.canCreateQR 
-            ? 'Payment successful! Your subscription is now active. You can now save your QR code.' 
-            : 'Payment processing... Please wait a moment.');
-          setSubscriptionChecked(true);
-          // Remove the payment parameter from URL
-          searchParams.delete('payment');
-          searchParams.delete('session_id');
-          setSearchParams(searchParams, { replace: true });
-        });
-      }
-    } else if (paymentStatus === 'canceled') {
-      // Payment canceled - explicitly verify subscription is NOT active
-      if (user) {
-        checkSubscriptionStatus(user.id).then(status => {
-          // Explicitly set to false - no subscription means no access
-          setCanCreateQR(false);
-          setSubscriptionMessage('Checkout was canceled. Please subscribe to unlock QR codes.');
-          setSubscriptionChecked(true);
-          setError('Payment was canceled. You can try again when ready.');
-          // Remove the payment parameter from URL
-          searchParams.delete('payment');
-          searchParams.delete('session_id');
-          setSearchParams(searchParams, { replace: true });
-        });
-      } else {
-        setError('Payment was canceled. You can try again when ready.');
-        searchParams.delete('payment');
-        setSearchParams(searchParams, { replace: true });
-      }
-    }
-  }, [searchParams, setSearchParams, user]);
-
-  useEffect(() => {
-    // Only check subscription when user tries to save (not blocking the build process)
-    async function verifySubscription() {
-      if (!user) {
-        setSubscriptionChecked(true);
-        setCanCreateQR(false);
-        setSubscriptionMessage('Please log in to save QR codes');
-        return;
-      }
-
-      const status = await checkSubscriptionStatus(user.id);
-      setCanCreateQR(status.canCreateQR);
-      setSubscriptionMessage(status.message || '');
-      setSubscriptionChecked(true);
-    }
-
-    verifySubscription();
-    
-    // Re-check subscription status every 5 seconds if not active (only when on paywall step)
-    // Only check if subscription was already verified (to avoid race conditions with canceled payments)
-    const interval = setInterval(async () => {
-      if (user && step === 3 && !canCreateQR && subscriptionChecked) {
-        const status = await checkSubscriptionStatus(user.id);
-        // Double-check: only set to true if status is explicitly active
-        if (status.canCreateQR && status.hasActiveSubscription) {
-          setCanCreateQR(true);
-          setSubscriptionMessage('Payment successful! Your subscription is now active.');
-          clearInterval(interval);
-        }
-      }
-    }, 5000);
-
-    return () => clearInterval(interval);
-  }, [user, canCreateQR, step]);
-
-  useEffect(() => {
-    // Only auto-close paywall if subscription is verified as active
-    if (canCreateQR && showPaywall && subscriptionChecked) {
-      setShowPaywall(false);
-      setStep(2);
-    }
-  }, [canCreateQR, showPaywall, subscriptionChecked]);
 
   // Generate Live Preview QR code when in step 2 and content changes
   useEffect(() => {
@@ -254,20 +162,6 @@ export function CreateQRPage() {
     }
   }, [step, selectedType, content]);
 
-  // Generate QR code preview for step 3 (subscription page)
-  useEffect(() => {
-    if (step === 3 && !qrCodeImageUrl && selectedType && content) {
-      try {
-        const qrData = buildQRData(selectedType, content);
-        if (qrData && qrData.trim() !== '') {
-          const qrApiUrl = `https://api.qrserver.com/v1/create-qr-code/?size=500x500&data=${encodeURIComponent(qrData)}&format=png`;
-          setQrCodeImageUrl(qrApiUrl);
-        }
-      } catch (error) {
-        console.error('Error generating QR preview:', error);
-      }
-    }
-  }, [step, selectedType, content, qrCodeImageUrl]);
 
   async function handleCreateQR() {
     if (!user) {
@@ -345,10 +239,7 @@ export function CreateQRPage() {
     setError('');
 
     try {
-      // Check subscription status before creating QR code
-      const subscriptionStatus = await checkSubscriptionStatus(user.id);
-      
-      // Always create QR code, even without subscription
+      // QR code creation is now free - always create without subscription check
       const result = await createQRCode(
         user.id,
         qrName || `${selectedType} QR Code`,
@@ -359,27 +250,8 @@ export function CreateQRPage() {
         enableTracking
       );
       
-      // Generate QR code preview for step 3
-      try {
-        const qrData = buildQRData(selectedType, content);
-        if (qrData && qrData.trim() !== '') {
-          const qrApiUrl = `https://api.qrserver.com/v1/create-qr-code/?size=500x500&data=${encodeURIComponent(qrData)}&format=png`;
-          setQrCodeImageUrl(qrApiUrl);
-        }
-      } catch (err) {
-        console.error('Error generating QR preview:', err);
-      }
-      
-      // If user has active subscription, show success and redirect to dashboard
-      if (subscriptionStatus.canCreateQR && subscriptionStatus.hasActiveSubscription) {
-        // QR code created successfully with active subscription
-        // Show success message and redirect to dashboard
-        navigate('/dashboard?created=true');
-      } else {
-        // No subscription - show paywall
-        setShowPaywall(true);
-        setStep(3);
-      }
+      // QR code created successfully - redirect to dashboard
+      navigate('/dashboard?created=true');
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Failed to create QR code. Please try again.');
       console.error('QR creation error:', err);
@@ -1054,7 +926,8 @@ export function CreateQRPage() {
       );
     }
 
-    if (step === 3) {
+    // Step 3 removed - QR creation is now free
+    if (false) {
       const HeroIcon = getHeroIcon(checkoutConfig.heroIcon);
       const isSplitLayout = checkoutConfig.layout === 'split';
       const isStackedLayout = checkoutConfig.layout === 'stacked';
@@ -1572,32 +1445,19 @@ export function CreateQRPage() {
   };
 
   return (
-    <div className={`min-h-screen ${
-      usePremiumTheme && step === 3
-        ? 'bg-gradient-to-br from-slate-950 via-slate-900 to-slate-800 text-white'
-        : 'bg-gray-50 text-gray-900'
-    }`}>
-      {usePremiumTheme && step === 3 && (
-        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_center,_rgba(56,189,248,0.08),_transparent_60%)]" />
-      )}
-      <div className={`container mx-auto px-4 sm:px-6 py-8 sm:py-12 ${usePremiumTheme && step === 3 ? 'relative' : ''}`}>
+    <div className="min-h-screen bg-gray-50 text-gray-900">
+      <div className="container mx-auto px-4 sm:px-6 py-8 sm:py-12">
         <div className="max-w-5xl mx-auto">
           {/* Header */}
           <div className="mb-8 sm:mb-10">
             <button
               onClick={() => navigate('/dashboard')}
-              className={`flex items-center space-x-2 mb-4 text-sm sm:text-base ${
-                usePremiumTheme && step === 3
-                  ? 'text-cyan-400 hover:text-cyan-300'
-                  : 'text-gray-600 hover:text-gray-900'
-              }`}
+              className="flex items-center space-x-2 mb-4 text-sm sm:text-base text-gray-600 hover:text-gray-900"
             >
               <ArrowLeft className="w-5 h-5" />
               <span>Back to Dashboard</span>
             </button>
-            <h1 className={`text-3xl sm:text-4xl font-bold text-balance ${
-              usePremiumTheme && step === 3 ? 'text-white' : 'text-gray-900'
-            }`}>
+            <h1 className="text-3xl sm:text-4xl font-bold text-balance text-gray-900">
               Create QR Code
             </h1>
           </div>
@@ -1621,81 +1481,12 @@ export function CreateQRPage() {
               </div>
               <span className="font-medium hidden md:inline">Content</span>
             </div>
-            <div className="w-12 border-t-2 border-gray-200"></div>
-            <div className={`flex items-center space-x-2 ${step >= 3 ? 'text-purple-600' : 'text-gray-400'}`}>
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                step >= 3 ? 'bg-purple-600 text-white' : 'bg-gray-200'
-              }`}>
-                3
-              </div>
-              <span className="font-medium hidden md:inline">Activate subscription</span>
-            </div>
           </div>
 
-          {/* Subscription Required Banner - Only show when on paywall step */}
-          {step === 3 && subscriptionChecked && showPaywall && (
-            <div className={`rounded-2xl shadow-xl p-5 sm:p-6 mb-6 sm:mb-8 ${
-              usePremiumTheme
-                ? 'bg-slate-900/80 border border-white/10 text-white'
-                : 'bg-white border border-gray-200 text-gray-900'
-            }`}>
-              <div className="flex flex-col gap-4 sm:gap-3 sm:flex-row sm:items-center sm:justify-between">
-                <div className="space-y-2">
-                  <h3 className="text-lg sm:text-xl font-bold">Your QR Code is Ready!</h3>
-                  <p className={`text-sm sm:text-base ${
-                    usePremiumTheme ? 'text-white/70' : 'text-gray-600'
-                  }`}>
-                    Subscribe now to save and unlock analytics. Only $5/month - honest pricing, no hidden fees.
-                  </p>
-                </div>
-                <button
-                  onClick={async () => {
-                    if (!user) {
-                      setError('Please log in to subscribe');
-                      navigate('/login');
-                      return;
-                    }
-                    
-                    setCheckoutLoading(true);
-                    setError('');
-                    
-                    try {
-                      await createCheckoutSession(user.id);
-                      // createCheckoutSession will redirect to Stripe, so we don't need to do anything else
-                    } catch (err: any) {
-                      setError(err.message || 'Failed to start checkout. Please try again.');
-                      setCheckoutLoading(false);
-                      console.error('Checkout error:', err);
-                    }
-                  }}
-                  disabled={checkoutLoading}
-                  className={`disabled:opacity-50 disabled:cursor-not-allowed font-semibold px-5 py-3 rounded-xl transition text-center shadow ${
-                    usePremiumTheme
-                      ? 'bg-cyan-400 hover:bg-cyan-300 text-slate-900'
-                      : 'bg-purple-600 hover:bg-purple-700 text-white'
-                  }`}
-                >
-                  {checkoutLoading ? 'Loading...' : 'Subscribe Now - $5/month'}
-                </button>
-              </div>
-            </div>
-          )}
 
           {/* Content */}
-          <div className={`rounded-2xl shadow-lg p-6 sm:p-8 ${
-            usePremiumTheme && step === 3
-              ? 'bg-slate-900/80 border border-white/10'
-              : 'bg-white border border-gray-200'
-          }`}>
-            {!subscriptionChecked ? (
-              <div className="text-center py-8">
-                <p className={usePremiumTheme && step === 3 ? 'text-white/70' : 'text-gray-600'}>
-                  Checking subscription status...
-                </p>
-              </div>
-            ) : (
-              renderStepContent()
-            )}
+          <div className={`rounded-2xl shadow-lg p-6 sm:p-8 bg-white border border-gray-200`}>
+            {renderStepContent()}
           </div>
 
           {/* Mobile Preview */}

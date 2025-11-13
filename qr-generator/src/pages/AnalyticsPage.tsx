@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
+import { checkSubscriptionStatus } from '../lib/subscriptionCheck';
+import { createCheckoutSession } from '../lib/stripe';
 import { useSEO } from '../hooks/useSEO';
-import { BarChart3, TrendingUp, Users, Globe, Calendar } from 'lucide-react';
+import { BarChart3, TrendingUp, Users, Globe, Calendar, Lock } from 'lucide-react';
 
 export function AnalyticsPage() {
   useSEO({
@@ -13,21 +15,42 @@ export function AnalyticsPage() {
   });
   const { qrId } = useParams();
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [analytics, setAnalytics] = useState<any>(null);
   const [qrCodes, setQrCodes] = useState<any[]>([]);
   const [selectedQR, setSelectedQR] = useState(qrId || '');
   const [loading, setLoading] = useState(true);
   const [dateRange, setDateRange] = useState('7days');
+  const [hasActiveSubscription, setHasActiveSubscription] = useState(false);
+  const [subscriptionChecked, setSubscriptionChecked] = useState(false);
+  const [checkoutLoading, setCheckoutLoading] = useState(false);
 
   useEffect(() => {
-    loadQRCodes();
+    if (user) {
+      checkSubscription();
+      loadQRCodes();
+    }
   }, [user]);
 
   useEffect(() => {
-    if (selectedQR) {
+    if (selectedQR && hasActiveSubscription) {
       loadAnalytics();
     }
-  }, [selectedQR, dateRange]);
+  }, [selectedQR, dateRange, hasActiveSubscription]);
+
+  async function checkSubscription() {
+    if (!user) return;
+    
+    try {
+      const status = await checkSubscriptionStatus(user.id);
+      setHasActiveSubscription(status.hasActiveSubscription);
+      setSubscriptionChecked(true);
+    } catch (error) {
+      console.error('Error checking subscription:', error);
+      setHasActiveSubscription(false);
+      setSubscriptionChecked(true);
+    }
+  }
 
   async function loadQRCodes() {
     if (!user) return;
@@ -90,12 +113,87 @@ export function AnalyticsPage() {
     }
   }
 
-  if (loading) {
+  if (loading || !subscriptionChecked) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-purple-600 border-t-transparent"></div>
-          <p className="mt-4 text-gray-600">Loading analytics...</p>
+          <p className="mt-4 text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show paywall if no active subscription
+  if (!hasActiveSubscription) {
+    return (
+      <div className="min-h-screen bg-gray-50 text-gray-900">
+        <div className="container mx-auto px-6 py-12">
+          <div className="mb-8">
+            <Link to="/dashboard" className="text-purple-600 hover:text-purple-700 mb-4 inline-block">
+              ← Back to Dashboard
+            </Link>
+            <h1 className="text-3xl font-bold text-gray-900">Analytics</h1>
+          </div>
+
+          {/* Paywall */}
+          <div className="max-w-2xl mx-auto bg-white rounded-lg shadow-lg border border-gray-200 p-8 text-center">
+            <div className="mb-6">
+              <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-purple-100 mb-4">
+                <Lock className="w-8 h-8 text-purple-600" />
+              </div>
+              <h2 className="text-2xl font-bold text-gray-900 mb-2">Analytics Requires Subscription</h2>
+              <p className="text-gray-600">
+                Unlock detailed analytics for your QR codes. Track scans, locations, devices, and more with real-time data.
+              </p>
+            </div>
+
+            <div className="bg-gray-50 rounded-lg p-6 mb-6">
+              <h3 className="font-semibold text-gray-900 mb-4">What you'll get:</h3>
+              <ul className="text-left space-y-2 text-gray-700">
+                <li className="flex items-center">
+                  <BarChart3 className="w-5 h-5 text-purple-600 mr-2" />
+                  Real-time scan tracking
+                </li>
+                <li className="flex items-center">
+                  <Globe className="w-5 h-5 text-purple-600 mr-2" />
+                  Location analytics
+                </li>
+                <li className="flex items-center">
+                  <Users className="w-5 h-5 text-purple-600 mr-2" />
+                  Device and browser insights
+                </li>
+                <li className="flex items-center">
+                  <TrendingUp className="w-5 h-5 text-purple-600 mr-2" />
+                  Performance trends
+                </li>
+              </ul>
+            </div>
+
+            <div className="space-y-3">
+              <button
+                onClick={async () => {
+                  if (!user) {
+                    navigate('/login');
+                    return;
+                  }
+                  
+                  setCheckoutLoading(true);
+                  try {
+                    await createCheckoutSession(user.id);
+                  } catch (err) {
+                    console.error('Checkout error:', err);
+                    setCheckoutLoading(false);
+                  }
+                }}
+                disabled={checkoutLoading}
+                className="w-full bg-purple-600 hover:bg-purple-700 text-white font-semibold px-6 py-3 rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {checkoutLoading ? 'Loading...' : 'Subscribe Now - $5/month'}
+              </button>
+              <p className="text-sm text-gray-500">Cancel anytime. No hidden fees.</p>
+            </div>
+          </div>
         </div>
       </div>
     );
