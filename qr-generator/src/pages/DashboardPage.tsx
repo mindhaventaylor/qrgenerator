@@ -546,7 +546,7 @@ export function DashboardPage() {
       </aside>
 
       {/* Main Content */}
-      <div className="flex-1 overflow-auto">
+      <div className="flex-1 overflow-auto overflow-x-hidden">
         {/* Header */}
         <header className="bg-slate-900/80 border-b border-white/10 backdrop-blur-md px-6 py-4 relative">
           <div className="flex items-center justify-between">
@@ -617,7 +617,7 @@ export function DashboardPage() {
         </div>
 
         {/* QR Codes Grid */}
-        <div className="p-6">
+        <div className="p-4 sm:p-6 max-w-full overflow-x-hidden">
           {loading ? (
             <div className="text-center py-12 relative">
               <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-cyan-400 border-t-transparent"></div>
@@ -637,10 +637,10 @@ export function DashboardPage() {
               </Link>
             </div>
           ) : (
-            <div className="grid gap-6 relative">
+            <div className="grid gap-4 sm:gap-6 relative max-w-full">
               {filteredQRCodes.map((qr) => (
-                <div key={qr.id} className="bg-slate-900/80 border border-white/10 backdrop-blur-md rounded-2xl p-6 hover:shadow-2xl transition hover:border-cyan-400/50 cursor-pointer" onClick={() => navigate(`/qr/${qr.id}`)}>
-                  <div className="flex items-start space-x-4">
+                <div key={qr.id} className="bg-slate-900/80 border border-white/10 backdrop-blur-md rounded-2xl p-4 sm:p-6 hover:shadow-2xl transition hover:border-cyan-400/50 cursor-pointer max-w-full overflow-hidden" onClick={() => navigate(`/qr/${qr.id}`)}>
+                  <div className="flex items-start space-x-3 sm:space-x-4 max-w-full overflow-hidden">
                     {/* QR Code Image */}
                     <div className="flex-shrink-0 relative">
                       {qr.qr_image_url ? (
@@ -675,18 +675,18 @@ export function DashboardPage() {
                     </div>
 
                     {/* QR Code Details */}
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-start justify-between">
-                        <div>
-                          <h3 className="text-lg font-semibold text-white truncate">{qr.name || 'Unnamed QR Code'}</h3>
-                          <p className="text-sm text-white/70 mt-1">
+                    <div className="flex-1 min-w-0 overflow-hidden">
+                      <div className="flex items-start justify-between gap-2 max-w-full overflow-hidden">
+                        <div className="flex-1 min-w-0 overflow-hidden">
+                          <h3 className="text-base sm:text-lg font-semibold text-white truncate">{qr.name || 'Unnamed QR Code'}</h3>
+                          <p className="text-xs sm:text-sm text-white/70 mt-1 truncate">
                             {qr.type ? (qr.type.charAt(0).toUpperCase() + qr.type.slice(1)) : 'Unknown Type'}
                           </p>
                           <p className="text-xs text-white/50 mt-1">
                             Created {qr.created_at ? new Date(qr.created_at).toLocaleDateString() : 'Unknown date'}
                           </p>
                         </div>
-                        <div className="relative">
+                        <div className="relative flex-shrink-0">
                           <button 
                             className="text-white/40 hover:text-white/70 p-1 rounded-lg hover:bg-white/10 transition" 
                             onClick={(e) => { 
@@ -746,7 +746,7 @@ export function DashboardPage() {
                         </div>
                       )}
 
-                      <div className="mt-4 flex items-center space-x-2 flex-wrap gap-2" onClick={(e) => e.stopPropagation()}>
+                      <div className="mt-4 flex items-center flex-wrap gap-2" onClick={(e) => e.stopPropagation()}>
                         {qr.qr_image_url && (
                           hasActiveSubscription ? (
                             <button

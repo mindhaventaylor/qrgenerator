@@ -418,9 +418,9 @@ export function CreateQRPage() {
 
     if (step === 2) {
       return (
-        <div>
+        <div className="max-w-full overflow-hidden">
           <h2 className="text-2xl font-bold text-white mb-6">2. Content</h2>
-          <div className="space-y-4">
+          <div className="space-y-4 max-w-full overflow-hidden">
             <div>
               <label className="block text-sm font-medium text-white mb-2">QR Code Name</label>
               <input
@@ -900,14 +900,14 @@ export function CreateQRPage() {
                   </label>
                   
                   {(content.links || []).length > 0 && (
-                    <div className="space-y-3 mb-4">
+                    <div className="space-y-3 mb-4 max-w-full overflow-hidden">
                       {content.links.map((link: { url: string; title: string }, index: number) => (
-                        <div key={index} className="flex gap-2 items-start p-3 bg-gray-50 rounded-lg border border-gray-200">
-                          <div className="flex-1">
-                            <div className="text-sm font-medium text-gray-900 mb-1">
+                        <div key={index} className="flex gap-2 items-start p-3 bg-gray-50 rounded-lg border border-gray-200 overflow-hidden">
+                          <div className="flex-1 min-w-0 overflow-hidden">
+                            <div className="text-sm font-medium text-gray-900 mb-1 truncate">
                               {link.title || `Link ${index + 1}`}
                             </div>
-                            <div className="text-xs text-gray-600 truncate">
+                            <div className="text-xs text-gray-600 truncate break-all">
                               {link.url}
                             </div>
                           </div>
@@ -917,7 +917,7 @@ export function CreateQRPage() {
                               const updatedLinks = (content.links as Array<{ url: string; title: string }>).filter((_, i: number) => i !== index);
                               setContent({ ...content, links: updatedLinks });
                             }}
-                            className="text-red-500 hover:text-red-700 text-sm font-medium px-2 py-1"
+                            className="text-red-500 hover:text-red-700 text-sm font-medium px-2 py-1 flex-shrink-0"
                           >
                             Remove
                           </button>
@@ -926,9 +926,9 @@ export function CreateQRPage() {
                     </div>
                   )}
                   
-                  <div className="border-2 border-dashed border-cyan-300 rounded-lg p-4 bg-cyan-50">
+                  <div className="border-2 border-dashed border-cyan-300 rounded-lg p-4 bg-cyan-50 max-w-full overflow-hidden">
                     <h4 className="text-sm font-semibold text-gray-900 mb-3">Add New Link</h4>
-                    <div className="space-y-3">
+                    <div className="space-y-3 max-w-full overflow-hidden">
                       <div>
                         <label className="block text-xs font-medium text-gray-700 mb-1">
                           Link Title (optional)
@@ -944,12 +944,12 @@ export function CreateQRPage() {
                         <label className="block text-xs font-medium text-gray-700 mb-1">
                           URL *
                         </label>
-                        <div className="flex gap-2">
+                        <div className="flex flex-col sm:flex-row gap-2">
                           <input
                             type="url"
                             id="new-link-url"
                             placeholder="https://example.com"
-                            className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm bg-white text-gray-900"
+                            className="flex-1 min-w-0 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm bg-white text-gray-900"
                           />
                           <button
                             type="button"
@@ -989,7 +989,7 @@ export function CreateQRPage() {
                               urlInput.value = '';
                               setError('');
                             }}
-                            className="px-4 py-2 bg-cyan-400 hover:bg-cyan-300 text-slate-900 rounded-lg font-medium text-sm transition"
+                            className="w-full sm:w-auto px-4 py-2 bg-cyan-400 hover:bg-cyan-300 text-slate-900 rounded-lg font-medium text-sm transition flex-shrink-0"
                           >
                             Add
                           </button>
