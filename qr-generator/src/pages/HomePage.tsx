@@ -109,7 +109,7 @@ const VARIANT_COPY: Record<LandingVariantKey, VariantCopy> = {
   },
   page5: {
     heroBadge: 'EDITABLE QR CODES • REAL-TIME ANALYTICS • HONEST PRICING',
-    heroTitle: 'Get Real-time QR Analytics Without Overpriced Plans or Contracts',
+    heroTitle: 'Get Real-Time QR Analytics Without Overpriced Plans or Contracts',
     heroDescription:
       'Track scans, locations, devices, and engagement in clean, easy dashboards. Edit or deactivate any QR anytime — all included in one transparent $5/month plan.',
     primaryCtaLabel: 'Try Now',
@@ -550,7 +550,7 @@ const landingVariantConfigs: Record<Exclude<LandingVariantKey, 'control'>, Varia
     ],
     highlight: {
       eyebrow: 'REAL BUSINESSES, REAL RESULTS',
-      title: 'Gave leadership weeklyQR performance clarity',
+      title: 'Gave Leadership Weekly QR Performance Clarity',
       description: 'A restaurant chain switched from manual tracking to live QR dashboards — seeing scan growth and engagement across 120 locations.',
       metricValue: '12,000+',
       metricLabel: 'Trusted by Thousands',
@@ -586,7 +586,7 @@ const landingVariantConfigs: Record<Exclude<LandingVariantKey, 'control'>, Varia
       }
     ],
     closing: {
-      title: 'Start creating, editing & tracking your QR codes — all for $5/month',
+      title: 'Design, edit, and track every QR — all for just $5/month.',
       description: 'Design branded QR codes, edit them anytime, and see real-time scan analytics — no hidden fees, no fake trials, just an honest QR platform.',
       primaryCtaLabel: 'Create your QR code now',
       primaryCtaHref: '/signup',
@@ -1740,12 +1740,12 @@ function VariantLanding({ variantKey, copy, config }: VariantLandingProps) {
                 <div className="rounded-2xl border border-white/15 p-4">
                   <p className="text-xs text-white/70">Total scans</p>
                   <p className="text-2xl font-bold">48,210</p>
-                  <p className="text-xs text-white/70">+12% vs last week</p>
+                  <p className="text-xs text-white/70">+12% vs Last Month</p>
                 </div>
                 <div className="rounded-2xl border border-white/15 p-4">
-                  <p className="text-xs text-white/70">Conversion rate</p>
-                  <p className="text-2xl font-bold">8.4%</p>
-                  <p className="text-xs text-white/70">Click-to-action</p>
+                  <p className="text-xs text-white/70">Scan Rate</p>
+                  <p className="text-2xl font-bold">84%</p>
+                  <p className="text-xs text-white/70">+40 vs Last Week</p>
                 </div>
               </div>
               <div className="mt-6 flex items-center justify-between rounded-2xl border border-white/10 p-4 text-xs text-white/80">
