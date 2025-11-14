@@ -7,6 +7,7 @@ import { createCheckoutSession } from '../lib/stripe';
 import { useSEO } from '../hooks/useSEO';
 import { getLandingVariantOrDefault } from '../utils/variantUtils';
 import { checkoutVariants } from '../utils/checkoutVariants';
+import { BodyShape, EyeShape, OuterBorderShape, applyQRShapes } from '../lib/qrShapeModifier';
 import {
   Globe,
   FileText,
@@ -80,6 +81,21 @@ export function CreateQRPage() {
   const [qrCodeImageUrl, setQrCodeImageUrl] = useState(''); // Generated QR code image URL
   const [showPaywall, setShowPaywall] = useState(false);
   const [checkoutLoading, setCheckoutLoading] = useState(false);
+  
+  // Customization state
+  const [foregroundColor, setForegroundColor] = useState('#000000');
+  const [backgroundColor, setBackgroundColor] = useState('#FFFFFF');
+  const [bodyShape, setBodyShape] = useState<BodyShape>('square');
+  const [eyeFrameShape, setEyeFrameShape] = useState<EyeShape>('square');
+  const [eyeBallShape, setEyeBallShape] = useState<EyeShape>('square');
+  const [outerBorderShape, setOuterBorderShape] = useState<OuterBorderShape>('none');
+  const [customizedPreviewUrl, setCustomizedPreviewUrl] = useState<string | null>(null);
+  const [previewLoading, setPreviewLoading] = useState(false);
+  
+  // Debounced color values for preview generation
+  const [debouncedForegroundColor, setDebouncedForegroundColor] = useState('#000000');
+  const [debouncedBackgroundColor, setDebouncedBackgroundColor] = useState('#FFFFFF');
+  
   const { user } = useAuth();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -254,6 +270,80 @@ export function CreateQRPage() {
     }
   }, [step, selectedType, content]);
 
+  // Debounce color changes to avoid excessive preview regeneration
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedForegroundColor(foregroundColor);
+    }, 300); // 300ms debounce
+
+    return () => clearTimeout(timer);
+  }, [foregroundColor]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedBackgroundColor(backgroundColor);
+    }, 300); // 300ms debounce
+
+    return () => clearTimeout(timer);
+  }, [backgroundColor]);
+
+  // Generate customized preview when in step 3 and customization changes
+  useEffect(() => {
+    if (step === 3 && selectedType && content) {
+      setPreviewLoading(true);
+      
+      // Build QR data
+      const qrData = buildQRData(selectedType, content);
+      if (!qrData || qrData.trim() === '') {
+        setPreviewLoading(false);
+        return;
+      }
+
+      // First generate QR code with colors (use debounced colors)
+      const fgColorClean = debouncedForegroundColor.replace('#', '');
+      const bgColorClean = debouncedBackgroundColor.replace('#', '');
+      const coloredQRUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(qrData)}&format=png&color=${fgColorClean}&bgcolor=${bgColorClean}`;
+
+      // Then apply shapes
+      applyQRShapes(coloredQRUrl, {
+        bodyShape,
+        eyeFrameShape,
+        eyeBallShape,
+        outerBorderShape: outerBorderShape || 'none',
+        foregroundColor: debouncedForegroundColor,
+        backgroundColor: debouncedBackgroundColor
+      }).then(blob => {
+        // Clean up previous URL
+        if (customizedPreviewUrl) {
+          URL.revokeObjectURL(customizedPreviewUrl);
+        }
+        const url = URL.createObjectURL(blob);
+        setCustomizedPreviewUrl(url);
+        setPreviewLoading(false);
+      }).catch(error => {
+        console.error('Error applying shapes to preview:', error);
+        if (customizedPreviewUrl) {
+          URL.revokeObjectURL(customizedPreviewUrl);
+        }
+        setCustomizedPreviewUrl(null);
+        setPreviewLoading(false);
+      });
+    } else if (step !== 3) {
+      // Clean up preview URL when leaving customization step
+      if (customizedPreviewUrl) {
+        URL.revokeObjectURL(customizedPreviewUrl);
+        setCustomizedPreviewUrl(null);
+      }
+    }
+
+    // Cleanup function
+    return () => {
+      if (customizedPreviewUrl && step !== 3) {
+        URL.revokeObjectURL(customizedPreviewUrl);
+      }
+    };
+  }, [step, selectedType, content, debouncedForegroundColor, debouncedBackgroundColor, bodyShape, eyeFrameShape, eyeBallShape, outerBorderShape]);
+
   // Generate QR code preview for step 3 (subscription page)
   useEffect(() => {
     if (step === 3 && !qrCodeImageUrl && selectedType && content) {
@@ -348,6 +438,16 @@ export function CreateQRPage() {
       // Check subscription status before creating QR code
       const subscriptionStatus = await checkSubscriptionStatus(user.id);
       
+      // Prepare customization object
+      const customization = {
+        foregroundColor,
+        backgroundColor,
+        bodyShape,
+        eyeFrameShape,
+        eyeBallShape,
+        outerBorderShape
+      };
+
       // Always create QR code, even without subscription
       const result = await createQRCode(
         user.id,
@@ -355,7 +455,7 @@ export function CreateQRPage() {
         selectedType,
         content,
         undefined,
-        undefined,
+        customization,
         enableTracking
       );
       
@@ -370,16 +470,8 @@ export function CreateQRPage() {
         console.error('Error generating QR preview:', err);
       }
       
-      // If user has active subscription, show success and redirect to dashboard
-      if (subscriptionStatus.canCreateQR && subscriptionStatus.hasActiveSubscription) {
-        // QR code created successfully with active subscription
-        // Show success message and redirect to dashboard
-        navigate('/dashboard?created=true');
-      } else {
-        // No subscription - show paywall
-        setShowPaywall(true);
-        setStep(3);
-      }
+      // Always redirect to dashboard (QR creation is free)
+      navigate('/dashboard?created=true');
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Failed to create QR code. Please try again.');
       console.error('QR creation error:', err);
@@ -1041,11 +1133,10 @@ export function CreateQRPage() {
               <span>Back</span>
             </button>
               <button
-                onClick={handleCreateQR}
-                disabled={loading}
-                className="flex items-center space-x-2 px-6 py-3 bg-cyan-400 hover:bg-cyan-300 disabled:bg-cyan-400/50 text-slate-900 rounded-lg transition"
+                onClick={() => setStep(3)}
+                className="flex items-center space-x-2 px-6 py-3 bg-cyan-400 hover:bg-cyan-300 text-slate-900 rounded-lg transition"
               >
-                {loading ? 'Creating...' : 'Generate QR Code'}
+                Next: Customize
                 <ArrowRight className="w-5 h-5" />
               </button>
             </div>
@@ -1055,6 +1146,248 @@ export function CreateQRPage() {
     }
 
     if (step === 3) {
+      // Shape preview component with QR code preview
+      const ShapePreview = ({ shape, label, type }: { shape: string; label: string; type: 'body' | 'eye' | 'eye-ball' | 'border' }) => {
+        const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+        const [loading, setLoading] = useState(false);
+        
+        const isSelected = 
+          (type === 'body' && bodyShape === shape) ||
+          (type === 'eye' && eyeFrameShape === shape) ||
+          (type === 'eye-ball' && eyeBallShape === shape) ||
+          (type === 'border' && outerBorderShape === shape);
+        
+        const handleClick = () => {
+          if (type === 'body') setBodyShape(shape as BodyShape);
+          else if (type === 'eye') setEyeFrameShape(shape as EyeShape);
+          else if (type === 'eye-ball') setEyeBallShape(shape as EyeShape);
+          else if (type === 'border') setOuterBorderShape(shape as OuterBorderShape);
+        };
+
+        // Generate preview for this specific shape (use debounced colors and only update when relevant changes)
+        useEffect(() => {
+          if (selectedType && content) {
+            setLoading(true);
+            const qrData = buildQRData(selectedType, content);
+            if (!qrData || qrData.trim() === '') {
+              setLoading(false);
+              return;
+            }
+
+            // Use debounced colors to avoid excessive regeneration
+            const fgColorClean = debouncedForegroundColor.replace('#', '');
+            const bgColorClean = debouncedBackgroundColor.replace('#', '');
+            const coloredQRUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(qrData)}&format=png&color=${fgColorClean}&bgcolor=${bgColorClean}`;
+
+            // Apply shape with this specific option
+            const shapeOptions = {
+              bodyShape: type === 'body' ? (shape as BodyShape) : bodyShape,
+              eyeFrameShape: type === 'eye' ? (shape as EyeShape) : eyeFrameShape,
+              eyeBallShape: type === 'eye-ball' ? (shape as EyeShape) : eyeBallShape,
+              outerBorderShape: type === 'border' ? (shape as OuterBorderShape) : outerBorderShape,
+              foregroundColor: debouncedForegroundColor,
+              backgroundColor: debouncedBackgroundColor
+            };
+
+            // Add a small delay to batch updates
+            const timeoutId = setTimeout(() => {
+              applyQRShapes(coloredQRUrl, shapeOptions).then(blob => {
+                // Clean up previous URL
+                if (previewUrl) {
+                  URL.revokeObjectURL(previewUrl);
+                }
+                const url = URL.createObjectURL(blob);
+                setPreviewUrl(url);
+                setLoading(false);
+              }).catch(error => {
+                console.error('Error generating shape preview:', error);
+                if (previewUrl) {
+                  URL.revokeObjectURL(previewUrl);
+                }
+                setPreviewUrl(null);
+                setLoading(false);
+              });
+            }, 100); // Small delay to batch rapid changes
+
+            return () => {
+              clearTimeout(timeoutId);
+              if (previewUrl) {
+                URL.revokeObjectURL(previewUrl);
+              }
+            };
+          }
+
+          return () => {
+            if (previewUrl) {
+              URL.revokeObjectURL(previewUrl);
+            }
+          };
+        }, [selectedType, content, debouncedForegroundColor, debouncedBackgroundColor, bodyShape, eyeFrameShape, eyeBallShape, outerBorderShape, shape, type]);
+
+        return (
+          <button
+            onClick={handleClick}
+            className={`p-3 rounded-lg border-2 transition ${
+              isSelected
+                ? 'border-cyan-400 bg-cyan-400/20'
+                : 'border-white/10 hover:border-white/30 bg-slate-900/60'
+            }`}
+          >
+            <div className="w-24 h-24 mx-auto mb-2 flex items-center justify-center bg-white rounded p-2">
+              {loading ? (
+                <div className="w-full h-full flex items-center justify-center">
+                  <div className="animate-spin rounded-full h-8 w-8 border-2 border-cyan-400 border-t-transparent"></div>
+                </div>
+              ) : previewUrl ? (
+                <img src={previewUrl} alt={label} className="w-full h-full object-contain" />
+              ) : (
+                <div className="w-full h-full bg-gray-200 rounded"></div>
+              )}
+            </div>
+            <span className={`text-xs font-medium ${isSelected ? 'text-cyan-400' : 'text-white/70'}`}>
+              {label}
+            </span>
+          </button>
+        );
+      };
+
+      return (
+        <div className="max-w-full overflow-hidden">
+          <h2 className="text-2xl font-bold text-white mb-6">3. Customization</h2>
+          
+          {/* Main QR Code Preview */}
+          <div className="mb-8 bg-slate-900/60 border border-white/10 rounded-xl p-6">
+            <h3 className="text-lg font-semibold text-white mb-4 text-center">Preview</h3>
+            <div className="flex justify-center">
+              <div className="p-4 rounded-lg" style={{ backgroundColor }}>
+                {previewLoading ? (
+                  <div className="w-64 h-64 flex items-center justify-center">
+                    <div className="animate-spin rounded-full h-12 w-12 border-4 border-cyan-400 border-t-transparent"></div>
+                  </div>
+                ) : customizedPreviewUrl ? (
+                  <img
+                    src={customizedPreviewUrl}
+                    alt="QR Code Preview"
+                    className="w-64 h-64 object-contain"
+                  />
+                ) : (
+                  <div className="w-64 h-64 bg-gray-200 rounded-lg flex items-center justify-center">
+                    <span className="text-gray-500">Generating preview...</span>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+          
+          {/* Colors */}
+          <div className="mb-8 bg-slate-900/60 border border-white/10 rounded-xl p-6">
+            <h3 className="text-lg font-semibold text-white mb-4 flex items-center">
+              <Palette className="w-5 h-5 mr-2 text-cyan-400" />
+              Colors
+            </h3>
+            <div className="grid md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm text-white/70 mb-2">Foreground Color</label>
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="color"
+                    value={foregroundColor}
+                    onChange={(e) => setForegroundColor(e.target.value)}
+                    className="w-16 h-10 rounded border border-white/10 cursor-pointer"
+                  />
+                  <input
+                    type="text"
+                    value={foregroundColor}
+                    onChange={(e) => setForegroundColor(e.target.value)}
+                    className="flex-1 px-3 py-2 bg-slate-900/60 border border-white/10 rounded-lg text-white"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm text-white/70 mb-2">Background Color</label>
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="color"
+                    value={backgroundColor}
+                    onChange={(e) => setBackgroundColor(e.target.value)}
+                    className="w-16 h-10 rounded border border-white/10 cursor-pointer"
+                  />
+                  <input
+                    type="text"
+                    value={backgroundColor}
+                    onChange={(e) => setBackgroundColor(e.target.value)}
+                    className="flex-1 px-3 py-2 bg-slate-900/60 border border-white/10 rounded-lg text-white"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Body Shape */}
+          <div className="mb-8 bg-slate-900/60 border border-white/10 rounded-xl p-6">
+            <h3 className="text-lg font-semibold text-white mb-4">Body Shape</h3>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+              <ShapePreview shape="square" label="Square" type="body" />
+              <ShapePreview shape="rounded" label="Rounded" type="body" />
+              <ShapePreview shape="circle" label="Circle" type="body" />
+              <ShapePreview shape="dots" label="Dots" type="body" />
+            </div>
+          </div>
+
+          {/* Eye Frame Shape */}
+          <div className="mb-8 bg-slate-900/60 border border-white/10 rounded-xl p-6">
+            <h3 className="text-lg font-semibold text-white mb-4">Eye Frame Shape</h3>
+            <div className="grid grid-cols-3 gap-4">
+              <ShapePreview shape="square" label="Square" type="eye" />
+              <ShapePreview shape="rounded" label="Rounded" type="eye" />
+              <ShapePreview shape="circle" label="Circle" type="eye" />
+            </div>
+          </div>
+
+          {/* Eye Ball Shape */}
+          <div className="mb-8 bg-slate-900/60 border border-white/10 rounded-xl p-6">
+            <h3 className="text-lg font-semibold text-white mb-4">Eye Ball Shape</h3>
+            <div className="grid grid-cols-3 gap-4">
+              <ShapePreview shape="square" label="Square" type="eye-ball" />
+              <ShapePreview shape="rounded" label="Rounded" type="eye-ball" />
+              <ShapePreview shape="circle" label="Circle" type="eye-ball" />
+            </div>
+          </div>
+
+          {/* Outer Border Shape */}
+          <div className="mb-8 bg-slate-900/60 border border-white/10 rounded-xl p-6">
+            <h3 className="text-lg font-semibold text-white mb-4">Outer Border</h3>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+              <ShapePreview shape="none" label="None" type="border" />
+              <ShapePreview shape="square" label="Square" type="border" />
+              <ShapePreview shape="rounded" label="Rounded" type="border" />
+              <ShapePreview shape="circle" label="Circle" type="border" />
+            </div>
+          </div>
+
+          {/* Navigation */}
+          <div className="flex items-center justify-between pt-6">
+            <button
+              onClick={() => setStep(2)}
+              className="flex items-center space-x-2 px-6 py-3 border border-white/10 rounded-lg hover:bg-white/10 transition text-white/70 hover:text-white"
+            >
+              <ArrowLeft className="w-5 h-5" />
+              <span>Back</span>
+            </button>
+            <button
+              onClick={handleCreateQR}
+              disabled={loading}
+              className="flex items-center space-x-2 px-6 py-3 bg-cyan-400 hover:bg-cyan-300 disabled:bg-cyan-400/50 text-slate-900 rounded-lg transition"
+            >
+              {loading ? 'Creating...' : 'Generate QR Code'}
+              <ArrowRight className="w-5 h-5" />
+            </button>
+          </div>
+        </div>
+      );
+    }
+
+    if (step === 4) {
       const HeroIcon = getHeroIcon(checkoutConfig.heroIcon);
       const isSplitLayout = checkoutConfig.layout === 'split';
       const isStackedLayout = checkoutConfig.layout === 'stacked';
@@ -1611,10 +1944,19 @@ export function CreateQRPage() {
               </div>
               <span className="font-medium hidden md:inline">Content</span>
             </div>
+            <div className="w-12 border-t-2 border-white/20"></div>
+            <div className={`flex items-center space-x-2 ${step >= 3 ? 'text-cyan-400' : 'text-white/40'}`}>
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                step >= 3 ? 'bg-cyan-400 text-slate-900' : 'bg-white/10'
+              }`}>
+                3
+              </div>
+              <span className="font-medium hidden md:inline">Customization</span>
+            </div>
           </div>
 
           {/* Subscription Required Banner - Only show when on paywall step */}
-          {step === 3 && subscriptionChecked && showPaywall && (
+          {step === 4 && subscriptionChecked && showPaywall && (
             <div className={`rounded-2xl shadow-xl p-5 sm:p-6 mb-6 sm:mb-8 ${
               usePremiumTheme
                 ? 'bg-slate-900/80 border border-white/10 text-white'

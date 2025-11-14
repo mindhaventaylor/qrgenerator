@@ -6,7 +6,8 @@ import { checkSubscriptionStatus } from '../lib/subscriptionCheck';
 import { createCheckoutSession } from '../lib/stripe';
 import { buildQRData } from '../lib/qrGenerator';
 import { useSEO } from '../hooks/useSEO';
-import { Download, Palette, Image as ImageIcon, Lock, ArrowLeft, Save, Upload } from 'lucide-react';
+import { Download, Palette, Image as ImageIcon, Lock, ArrowLeft, Save, Upload, Shapes } from 'lucide-react';
+import { applyQRShapes, BodyShape, EyeShape } from '../lib/qrShapeModifier';
 
 interface QRCode {
   id: string;
@@ -41,6 +42,12 @@ export function QRDetailPage() {
   const [showLogo, setShowLogo] = useState(true);
   const [logoUrl, setLogoUrl] = useState('');
   const [customQRPreviewUrl, setCustomQRPreviewUrl] = useState<string | null>(null);
+  
+  // Shape customization state
+  const [bodyShape, setBodyShape] = useState<BodyShape>('square');
+  const [eyeFrameShape, setEyeFrameShape] = useState<EyeShape>('square');
+  const [eyeBallShape, setEyeBallShape] = useState<EyeShape>('square');
+  const [shapedQRPreviewUrl, setShapedQRPreviewUrl] = useState<string | null>(null);
 
   useEffect(() => {
     if (user) {
@@ -90,8 +97,58 @@ export function QRDetailPage() {
       generateCustomQRPreview(qrCode, foregroundColor, backgroundColor);
     } else {
       setCustomQRPreviewUrl(null);
+      setShapedQRPreviewUrl(null);
     }
   }, [foregroundColor, backgroundColor, hasActiveSubscription, qrCode]);
+
+  // Apply shapes to QR code preview
+  useEffect(() => {
+    let currentUrl: string | null = null;
+    
+    if (hasActiveSubscription && customQRPreviewUrl && (bodyShape !== 'square' || eyeFrameShape !== 'square' || eyeBallShape !== 'square')) {
+      applyQRShapes(customQRPreviewUrl, {
+        bodyShape,
+        eyeFrameShape,
+        eyeBallShape,
+        foregroundColor,
+        backgroundColor
+      }).then(blob => {
+        // Clean up previous URL if it exists
+        setShapedQRPreviewUrl(prev => {
+          if (prev) {
+            URL.revokeObjectURL(prev);
+          }
+          return null;
+        });
+        
+        const url = URL.createObjectURL(blob);
+        currentUrl = url;
+        setShapedQRPreviewUrl(url);
+      }).catch(error => {
+        console.error('Error applying shapes:', error);
+        setShapedQRPreviewUrl(prev => {
+          if (prev) {
+            URL.revokeObjectURL(prev);
+          }
+          return null;
+        });
+      });
+    } else {
+      setShapedQRPreviewUrl(prev => {
+        if (prev) {
+          URL.revokeObjectURL(prev);
+        }
+        return null;
+      });
+    }
+    
+    // Cleanup function
+    return () => {
+      if (currentUrl) {
+        URL.revokeObjectURL(currentUrl);
+      }
+    };
+  }, [customQRPreviewUrl, bodyShape, eyeFrameShape, eyeBallShape, foregroundColor, backgroundColor, hasActiveSubscription]);
 
   async function loadQRCode() {
     if (!user || !id) return;
@@ -114,6 +171,9 @@ export function QRDetailPage() {
         setBackgroundColor(data.customization.backgroundColor || '#FFFFFF');
         setShowLogo(data.customization.showLogo !== false);
         setLogoUrl(data.customization.logoUrl || '');
+        setBodyShape(data.customization.bodyShape || 'square');
+        setEyeFrameShape(data.customization.eyeFrameShape || 'square');
+        setEyeBallShape(data.customization.eyeBallShape || 'square');
       }
     } catch (error) {
       console.error('Error loading QR code:', error);
@@ -171,18 +231,56 @@ export function QRDetailPage() {
         qrImageUrl = publicUrl;
       }
 
+      // Apply shapes if needed
+      let finalImageUrl = qrImageUrl;
+      if (bodyShape !== 'square' || eyeFrameShape !== 'square' || eyeBallShape !== 'square') {
+        try {
+          const shapedBlob = await applyQRShapes(qrImageUrl, {
+            bodyShape,
+            eyeFrameShape,
+            eyeBallShape,
+            foregroundColor,
+            backgroundColor
+          });
+          
+          // Upload shaped QR code
+          const timestamp = Date.now();
+          const fileName = `${timestamp}_shaped.png`;
+          const filePath = `${user.id}/${fileName}`;
+          
+          const { error: shapedUploadError } = await supabase.storage
+            .from('qr-images')
+            .upload(filePath, shapedBlob, {
+              contentType: 'image/png',
+              upsert: true
+            });
+          
+          if (!shapedUploadError) {
+            const { data: { publicUrl } } = supabase.storage
+              .from('qr-images')
+              .getPublicUrl(filePath);
+            finalImageUrl = publicUrl;
+          }
+        } catch (error) {
+          console.error('Error applying shapes:', error);
+        }
+      }
+
       const customization = {
         foregroundColor,
         backgroundColor,
         showLogo,
-        logoUrl
+        logoUrl,
+        bodyShape,
+        eyeFrameShape,
+        eyeBallShape
       };
 
       const { error } = await supabase
         .from('qr_codes')
         .update({ 
           customization,
-          qr_image_url: qrImageUrl,
+          qr_image_url: finalImageUrl,
           updated_at: new Date().toISOString()
         })
         .eq('id', qrCode.id)
@@ -356,8 +454,10 @@ export function QRDetailPage() {
       // Start with the customized QR code (which includes color customizations)
       let qrImageUrl = qrCode.qr_image_url;
       
-      // If there's a custom preview URL (with colors), use that instead
-      if (customQRPreviewUrl) {
+      // If there's a shaped preview URL (with colors and shapes), use that
+      if (shapedQRPreviewUrl) {
+        qrImageUrl = shapedQRPreviewUrl;
+      } else if (customQRPreviewUrl) {
         qrImageUrl = customQRPreviewUrl;
       }
 
@@ -462,7 +562,13 @@ export function QRDetailPage() {
                   >
                     {qrCode.qr_image_url ? (
                       <>
-                        {customQRPreviewUrl ? (
+                        {shapedQRPreviewUrl ? (
+                          <img
+                            src={shapedQRPreviewUrl}
+                            alt={qrCode.name}
+                            className="w-64 h-64 object-contain"
+                          />
+                        ) : customQRPreviewUrl ? (
                           <img
                             src={customQRPreviewUrl}
                             alt={qrCode.name}
@@ -615,6 +721,64 @@ export function QRDetailPage() {
                       className={`flex-1 px-3 py-2 bg-slate-900/60 border border-white/10 rounded-lg text-white ${!hasActiveSubscription ? 'opacity-50 cursor-not-allowed' : ''}`}
                     />
                   </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Shape Customization - Requires Subscription */}
+            <div className="mb-6">
+              <div className="flex items-center justify-between mb-2">
+                <label className="text-sm font-medium text-white flex items-center">
+                  <Shapes className="w-4 h-4 mr-2 text-cyan-400" />
+                  Shapes
+                </label>
+                {!hasActiveSubscription && (
+                  <span className="text-xs text-white/50 flex items-center">
+                    <Lock className="w-3 h-3 mr-1" />
+                    Premium
+                  </span>
+                )}
+              </div>
+              
+              <div className="space-y-3">
+                <div>
+                  <label className="block text-sm text-white/70 mb-1">Body Shape</label>
+                  <select
+                    value={bodyShape}
+                    onChange={(e) => setBodyShape(e.target.value as BodyShape)}
+                    disabled={!hasActiveSubscription}
+                    className={`w-full px-3 py-2 bg-slate-900/60 border border-white/10 rounded-lg text-white ${!hasActiveSubscription ? 'opacity-50 cursor-not-allowed' : ''}`}
+                  >
+                    <option value="square">Square</option>
+                    <option value="rounded">Rounded</option>
+                    <option value="dots">Dots</option>
+                  </select>
+                </div>
+                
+                <div>
+                  <label className="block text-sm text-white/70 mb-1">Eye Frame Shape</label>
+                  <select
+                    value={eyeFrameShape}
+                    onChange={(e) => setEyeFrameShape(e.target.value as EyeShape)}
+                    disabled={!hasActiveSubscription}
+                    className={`w-full px-3 py-2 bg-slate-900/60 border border-white/10 rounded-lg text-white ${!hasActiveSubscription ? 'opacity-50 cursor-not-allowed' : ''}`}
+                  >
+                    <option value="square">Square</option>
+                    <option value="rounded">Rounded</option>
+                  </select>
+                </div>
+                
+                <div>
+                  <label className="block text-sm text-white/70 mb-1">Eye Ball Shape</label>
+                  <select
+                    value={eyeBallShape}
+                    onChange={(e) => setEyeBallShape(e.target.value as EyeShape)}
+                    disabled={!hasActiveSubscription}
+                    className={`w-full px-3 py-2 bg-slate-900/60 border border-white/10 rounded-lg text-white ${!hasActiveSubscription ? 'opacity-50 cursor-not-allowed' : ''}`}
+                  >
+                    <option value="square">Square</option>
+                    <option value="rounded">Rounded</option>
+                  </select>
                 </div>
               </div>
             </div>
