@@ -36,7 +36,8 @@ import {
   Check,
   Palette,
   Settings,
-  QrCode
+  QrCode,
+  Shapes
 } from 'lucide-react';
 
 const QR_TYPES = [
@@ -1227,16 +1228,16 @@ export function CreateQRPage() {
         return (
           <button
             onClick={handleClick}
-            className={`p-3 rounded-lg border-2 transition ${
+            className={`p-2 sm:p-3 rounded-lg border-2 transition min-w-0 w-full ${
               isSelected
                 ? 'border-cyan-400 bg-cyan-400/20'
                 : 'border-white/10 hover:border-white/30 bg-slate-900/60'
             }`}
           >
-            <div className="w-24 h-24 mx-auto mb-2 flex items-center justify-center bg-white rounded p-2">
+            <div className="w-16 h-16 sm:w-20 sm:h-20 mx-auto mb-2 flex items-center justify-center bg-white rounded p-1 sm:p-2">
               {loading ? (
                 <div className="w-full h-full flex items-center justify-center">
-                  <div className="animate-spin rounded-full h-8 w-8 border-2 border-cyan-400 border-t-transparent"></div>
+                  <div className="animate-spin rounded-full h-6 w-6 sm:h-8 sm:w-8 border-2 border-cyan-400 border-t-transparent"></div>
                 </div>
               ) : previewUrl ? (
                 <img src={previewUrl} alt={label} className="w-full h-full object-contain" />
@@ -1244,7 +1245,7 @@ export function CreateQRPage() {
                 <div className="w-full h-full bg-gray-200 rounded"></div>
               )}
             </div>
-            <span className={`text-xs font-medium ${isSelected ? 'text-cyan-400' : 'text-white/70'}`}>
+            <span className={`text-xs font-medium truncate block ${isSelected ? 'text-cyan-400' : 'text-white/70'}`}>
               {label}
             </span>
           </button>
@@ -1252,132 +1253,166 @@ export function CreateQRPage() {
       };
 
       return (
-        <div className="max-w-full overflow-hidden">
-          <h2 className="text-2xl font-bold text-white mb-6">3. Customization</h2>
-          
-          {/* Main QR Code Preview */}
-          <div className="mb-8 bg-slate-900/60 border border-white/10 rounded-xl p-6">
-            <h3 className="text-lg font-semibold text-white mb-4 text-center">Preview</h3>
-            <div className="flex justify-center">
-              <div className="p-4 rounded-lg" style={{ backgroundColor }}>
-                {previewLoading ? (
-                  <div className="w-64 h-64 flex items-center justify-center">
-                    <div className="animate-spin rounded-full h-12 w-12 border-4 border-cyan-400 border-t-transparent"></div>
-                  </div>
-                ) : customizedPreviewUrl ? (
-                  <img
-                    src={customizedPreviewUrl}
-                    alt="QR Code Preview"
-                    className="w-64 h-64 object-contain"
-                  />
-                ) : (
-                  <div className="w-64 h-64 bg-gray-200 rounded-lg flex items-center justify-center">
-                    <span className="text-gray-500">Generating preview...</span>
-                  </div>
-                )}
-              </div>
-            </div>
+        <div className="max-w-full overflow-x-hidden">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0 mb-6">
+            <h2 className="text-2xl font-bold text-white">3. Customization</h2>
+            {/* Top Generate Button - Always visible for easy access */}
+            <button
+              onClick={handleCreateQR}
+              disabled={loading}
+              className="w-full sm:w-auto flex items-center justify-center space-x-2 px-6 py-3 bg-cyan-400 hover:bg-cyan-300 disabled:bg-cyan-400/50 text-slate-900 rounded-lg transition font-semibold"
+            >
+              {loading ? 'Creating...' : 'Generate QR Code'}
+              <ArrowRight className="w-5 h-5" />
+            </button>
           </div>
           
-          {/* Colors */}
-          <div className="mb-8 bg-slate-900/60 border border-white/10 rounded-xl p-6">
-            <h3 className="text-lg font-semibold text-white mb-4 flex items-center">
-              <Palette className="w-5 h-5 mr-2 text-cyan-400" />
-              Colors
-            </h3>
-            <div className="grid md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm text-white/70 mb-2">Foreground Color</label>
-                <div className="flex items-center space-x-2">
-                  <input
-                    type="color"
-                    value={foregroundColor}
-                    onChange={(e) => setForegroundColor(e.target.value)}
-                    className="w-16 h-10 rounded border border-white/10 cursor-pointer"
-                  />
-                  <input
-                    type="text"
-                    value={foregroundColor}
-                    onChange={(e) => setForegroundColor(e.target.value)}
-                    className="flex-1 px-3 py-2 bg-slate-900/60 border border-white/10 rounded-lg text-white"
-                  />
-                </div>
-              </div>
-              <div>
-                <label className="block text-sm text-white/70 mb-2">Background Color</label>
-                <div className="flex items-center space-x-2">
-                  <input
-                    type="color"
-                    value={backgroundColor}
-                    onChange={(e) => setBackgroundColor(e.target.value)}
-                    className="w-16 h-10 rounded border border-white/10 cursor-pointer"
-                  />
-                  <input
-                    type="text"
-                    value={backgroundColor}
-                    onChange={(e) => setBackgroundColor(e.target.value)}
-                    className="flex-1 px-3 py-2 bg-slate-900/60 border border-white/10 rounded-lg text-white"
-                  />
+          <div className="grid md:grid-cols-2 gap-6 mb-6">
+            {/* QR Code Preview */}
+            <div className="bg-slate-900/80 border border-white/10 backdrop-blur-md rounded-2xl p-4 sm:p-6 shadow-2xl overflow-hidden">
+              <h2 className="text-xl font-semibold text-white mb-4">QR Code Preview</h2>
+              <div className="flex justify-center">
+                <div 
+                  className="p-4 rounded-lg relative max-w-full"
+                  style={{ backgroundColor }}
+                >
+                  {previewLoading ? (
+                    <div className="w-48 h-48 sm:w-64 sm:h-64 flex items-center justify-center">
+                      <div className="animate-spin rounded-full h-12 w-12 border-4 border-cyan-400 border-t-transparent"></div>
+                    </div>
+                  ) : customizedPreviewUrl ? (
+                    <img
+                      src={customizedPreviewUrl}
+                      alt="QR Code Preview"
+                      className="w-48 h-48 sm:w-64 sm:h-64 object-contain max-w-full"
+                    />
+                  ) : (
+                    <div className="w-48 h-48 sm:w-64 sm:h-64 bg-slate-800 rounded-lg flex items-center justify-center">
+                      <p className="text-white/40 text-sm">Generating preview...</p>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
-          </div>
 
-          {/* Body Shape */}
-          <div className="mb-8 bg-slate-900/60 border border-white/10 rounded-xl p-6">
-            <h3 className="text-lg font-semibold text-white mb-4">Body Shape</h3>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-              <ShapePreview shape="square" label="Square" type="body" />
-              <ShapePreview shape="rounded" label="Rounded" type="body" />
-              <ShapePreview shape="circle" label="Circle" type="body" />
-              <ShapePreview shape="dots" label="Dots" type="body" />
+            {/* Customization Options */}
+            <div className="bg-slate-900/80 border border-white/10 backdrop-blur-md rounded-2xl p-4 sm:p-6 shadow-2xl overflow-hidden">
+              <h2 className="text-xl font-semibold text-white mb-4">Customization</h2>
+
+              {/* Color Customization */}
+              <div className="mb-6">
+                <div className="flex items-center justify-between mb-2">
+                  <label className="text-sm font-medium text-white flex items-center">
+                    <Palette className="w-4 h-4 mr-2 text-cyan-400" />
+                    Colors
+                  </label>
+                </div>
+                
+                <div className="space-y-3">
+                  <div>
+                    <label className="block text-sm text-white/70 mb-1">Foreground Color</label>
+                    <div className="flex items-center space-x-2 min-w-0">
+                      <input
+                        type="color"
+                        value={foregroundColor}
+                        onChange={(e) => setForegroundColor(e.target.value)}
+                        className="w-12 h-10 sm:w-16 sm:h-10 rounded border border-white/10 cursor-pointer flex-shrink-0"
+                      />
+                      <input
+                        type="text"
+                        value={foregroundColor}
+                        onChange={(e) => setForegroundColor(e.target.value)}
+                        className="flex-1 min-w-0 px-2 sm:px-3 py-2 bg-slate-900/60 border border-white/10 rounded-lg text-white text-sm"
+                      />
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm text-white/70 mb-1">Background Color</label>
+                    <div className="flex items-center space-x-2 min-w-0">
+                      <input
+                        type="color"
+                        value={backgroundColor}
+                        onChange={(e) => setBackgroundColor(e.target.value)}
+                        className="w-12 h-10 sm:w-16 sm:h-10 rounded border border-white/10 cursor-pointer flex-shrink-0"
+                      />
+                      <input
+                        type="text"
+                        value={backgroundColor}
+                        onChange={(e) => setBackgroundColor(e.target.value)}
+                        className="flex-1 min-w-0 px-2 sm:px-3 py-2 bg-slate-900/60 border border-white/10 rounded-lg text-white text-sm"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Shape Customization */}
+              <div className="mb-6">
+                <div className="flex items-center justify-between mb-2">
+                  <label className="text-sm font-medium text-white flex items-center">
+                    <Shapes className="w-4 h-4 mr-2 text-cyan-400" />
+                    Shapes
+                  </label>
+                </div>
+                
+                <div className="space-y-3">
+                  <div>
+                    <label className="block text-sm text-white/70 mb-1">Body Shape</label>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 overflow-x-hidden">
+                      <ShapePreview shape="square" label="Square" type="body" />
+                      <ShapePreview shape="rounded" label="Rounded" type="body" />
+                      <ShapePreview shape="circle" label="Circle" type="body" />
+                      <ShapePreview shape="dots" label="Dots" type="body" />
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm text-white/70 mb-1">Eye Frame Shape</label>
+                    <div className="grid grid-cols-3 gap-2 overflow-x-hidden">
+                      <ShapePreview shape="square" label="Square" type="eye" />
+                      <ShapePreview shape="rounded" label="Rounded" type="eye" />
+                      <ShapePreview shape="circle" label="Circle" type="eye" />
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm text-white/70 mb-1">Eye Ball Shape</label>
+                    <div className="grid grid-cols-3 gap-2 overflow-x-hidden">
+                      <ShapePreview shape="square" label="Square" type="eye-ball" />
+                      <ShapePreview shape="rounded" label="Rounded" type="eye-ball" />
+                      <ShapePreview shape="circle" label="Circle" type="eye-ball" />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm text-white/70 mb-1">Outer Border</label>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 overflow-x-hidden">
+                      <ShapePreview shape="none" label="None" type="border" />
+                      <ShapePreview shape="square" label="Square" type="border" />
+                      <ShapePreview shape="rounded" label="Rounded" type="border" />
+                      <ShapePreview shape="circle" label="Circle" type="border" />
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
 
-          {/* Eye Frame Shape */}
-          <div className="mb-8 bg-slate-900/60 border border-white/10 rounded-xl p-6">
-            <h3 className="text-lg font-semibold text-white mb-4">Eye Frame Shape</h3>
-            <div className="grid grid-cols-3 gap-4">
-              <ShapePreview shape="square" label="Square" type="eye" />
-              <ShapePreview shape="rounded" label="Rounded" type="eye" />
-              <ShapePreview shape="circle" label="Circle" type="eye" />
-            </div>
-          </div>
-
-          {/* Eye Ball Shape */}
-          <div className="mb-8 bg-slate-900/60 border border-white/10 rounded-xl p-6">
-            <h3 className="text-lg font-semibold text-white mb-4">Eye Ball Shape</h3>
-            <div className="grid grid-cols-3 gap-4">
-              <ShapePreview shape="square" label="Square" type="eye-ball" />
-              <ShapePreview shape="rounded" label="Rounded" type="eye-ball" />
-              <ShapePreview shape="circle" label="Circle" type="eye-ball" />
-            </div>
-          </div>
-
-          {/* Outer Border Shape */}
-          <div className="mb-8 bg-slate-900/60 border border-white/10 rounded-xl p-6">
-            <h3 className="text-lg font-semibold text-white mb-4">Outer Border</h3>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-              <ShapePreview shape="none" label="None" type="border" />
-              <ShapePreview shape="square" label="Square" type="border" />
-              <ShapePreview shape="rounded" label="Rounded" type="border" />
-              <ShapePreview shape="circle" label="Circle" type="border" />
-            </div>
-          </div>
-
-          {/* Navigation */}
-          <div className="flex items-center justify-between pt-6">
+          {/* Navigation - Bottom buttons */}
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pt-6">
             <button
               onClick={() => setStep(2)}
-              className="flex items-center space-x-2 px-6 py-3 border border-white/10 rounded-lg hover:bg-white/10 transition text-white/70 hover:text-white"
+              className="flex items-center justify-center space-x-2 px-6 py-3 border border-white/10 rounded-lg hover:bg-white/10 transition text-white/70 hover:text-white"
             >
               <ArrowLeft className="w-5 h-5" />
               <span>Back</span>
             </button>
+            {/* Bottom Generate Button - Always visible for easy access */}
             <button
               onClick={handleCreateQR}
               disabled={loading}
-              className="flex items-center space-x-2 px-6 py-3 bg-cyan-400 hover:bg-cyan-300 disabled:bg-cyan-400/50 text-slate-900 rounded-lg transition"
+              className="flex items-center justify-center space-x-2 px-6 py-3 bg-cyan-400 hover:bg-cyan-300 disabled:bg-cyan-400/50 text-slate-900 rounded-lg transition font-semibold"
             >
               {loading ? 'Creating...' : 'Generate QR Code'}
               <ArrowRight className="w-5 h-5" />
@@ -1423,6 +1458,21 @@ export function CreateQRPage() {
         // Split layout: Benefits on left, Pricing on right
         return (
           <div className="space-y-8">
+            {/* Top Generate QR Code Button */}
+            <div className="flex items-center justify-between">
+              <h2 className={`text-2xl font-bold ${usePremiumTheme ? 'text-white' : 'text-gray-900'}`}>
+                4. Subscribe to Unlock
+              </h2>
+              <button
+                onClick={handleCreateQR}
+                disabled={loading}
+                className="hidden md:flex items-center space-x-2 px-6 py-3 bg-cyan-400 hover:bg-cyan-300 disabled:bg-cyan-400/50 text-slate-900 rounded-lg transition font-semibold"
+              >
+                {loading ? 'Creating...' : 'Generate QR Code'}
+                <ArrowRight className="w-5 h-5" />
+              </button>
+            </div>
+
             {/* Hero Section */}
             <div className="text-center space-y-4">
               <div className={`inline-flex items-center justify-center w-20 h-20 rounded-full mb-4 bg-gradient-to-br ${checkoutConfig.heroIconBg}`}>
@@ -1556,6 +1606,15 @@ export function CreateQRPage() {
                     {checkoutLoading ? 'Loading...' : checkoutConfig.ctaLabel}
                     {!checkoutLoading && <ArrowRight className="w-5 h-5" />}
                   </button>
+                  {/* Mobile Generate QR Code Button */}
+                  <button
+                    onClick={handleCreateQR}
+                    disabled={loading}
+                    className="md:hidden flex items-center justify-center space-x-2 px-6 py-3 bg-cyan-400 hover:bg-cyan-300 disabled:bg-cyan-400/50 text-slate-900 rounded-lg transition font-semibold"
+                  >
+                    {loading ? 'Creating...' : 'Generate QR Code'}
+                    <ArrowRight className="w-5 h-5" />
+                  </button>
                   <button
                     onClick={() => {
                       setShowPaywall(false);
@@ -1581,6 +1640,21 @@ export function CreateQRPage() {
         // Stacked layout: Larger elements, more vertical spacing
         return (
           <div className="space-y-10">
+            {/* Top Generate QR Code Button */}
+            <div className="flex items-center justify-between">
+              <h2 className={`text-2xl font-bold ${usePremiumTheme ? 'text-white' : 'text-gray-900'}`}>
+                4. Subscribe to Unlock
+              </h2>
+              <button
+                onClick={handleCreateQR}
+                disabled={loading}
+                className="hidden md:flex items-center space-x-2 px-6 py-3 bg-cyan-400 hover:bg-cyan-300 disabled:bg-cyan-400/50 text-slate-900 rounded-lg transition font-semibold"
+              >
+                {loading ? 'Creating...' : 'Generate QR Code'}
+                <ArrowRight className="w-5 h-5" />
+              </button>
+            </div>
+
             {/* Hero Section - Larger */}
             <div className="text-center space-y-6">
               <div className={`inline-flex items-center justify-center w-24 h-24 rounded-full mb-4 bg-gradient-to-br ${checkoutConfig.heroIconBg}`}>
@@ -1697,6 +1771,15 @@ export function CreateQRPage() {
                 >
                   <ArrowLeft className="w-5 h-5" />
                   Continue Editing
+                </button>
+                {/* Mobile Generate QR Code Button */}
+                <button
+                  onClick={handleCreateQR}
+                  disabled={loading}
+                  className="md:hidden flex items-center justify-center space-x-2 px-8 py-4 bg-cyan-400 hover:bg-cyan-300 disabled:bg-cyan-400/50 text-slate-900 rounded-xl transition font-semibold text-lg"
+                >
+                  {loading ? 'Creating...' : 'Generate QR Code'}
+                  <ArrowRight className="w-5 h-5" />
                 </button>
                 <button
                   onClick={async () => {

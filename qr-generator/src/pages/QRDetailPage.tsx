@@ -7,7 +7,7 @@ import { createCheckoutSession } from '../lib/stripe';
 import { buildQRData } from '../lib/qrGenerator';
 import { useSEO } from '../hooks/useSEO';
 import { Download, Palette, Image as ImageIcon, Lock, ArrowLeft, Save, Upload, Shapes } from 'lucide-react';
-import { applyQRShapes, BodyShape, EyeShape } from '../lib/qrShapeModifier';
+import { applyQRShapes, BodyShape, EyeShape, OuterBorderShape } from '../lib/qrShapeModifier';
 
 interface QRCode {
   id: string;
@@ -47,6 +47,7 @@ export function QRDetailPage() {
   const [bodyShape, setBodyShape] = useState<BodyShape>('square');
   const [eyeFrameShape, setEyeFrameShape] = useState<EyeShape>('square');
   const [eyeBallShape, setEyeBallShape] = useState<EyeShape>('square');
+  const [outerBorderShape, setOuterBorderShape] = useState<OuterBorderShape>('none');
   const [shapedQRPreviewUrl, setShapedQRPreviewUrl] = useState<string | null>(null);
 
   useEffect(() => {
@@ -105,11 +106,12 @@ export function QRDetailPage() {
   useEffect(() => {
     let currentUrl: string | null = null;
     
-    if (hasActiveSubscription && customQRPreviewUrl && (bodyShape !== 'square' || eyeFrameShape !== 'square' || eyeBallShape !== 'square')) {
+    if (hasActiveSubscription && customQRPreviewUrl && (bodyShape !== 'square' || eyeFrameShape !== 'square' || eyeBallShape !== 'square' || outerBorderShape !== 'none')) {
       applyQRShapes(customQRPreviewUrl, {
         bodyShape,
         eyeFrameShape,
         eyeBallShape,
+        outerBorderShape,
         foregroundColor,
         backgroundColor
       }).then(blob => {
@@ -148,7 +150,7 @@ export function QRDetailPage() {
         URL.revokeObjectURL(currentUrl);
       }
     };
-  }, [customQRPreviewUrl, bodyShape, eyeFrameShape, eyeBallShape, foregroundColor, backgroundColor, hasActiveSubscription]);
+  }, [customQRPreviewUrl, bodyShape, eyeFrameShape, eyeBallShape, outerBorderShape, foregroundColor, backgroundColor, hasActiveSubscription]);
 
   async function loadQRCode() {
     if (!user || !id) return;
@@ -174,6 +176,7 @@ export function QRDetailPage() {
         setBodyShape(data.customization.bodyShape || 'square');
         setEyeFrameShape(data.customization.eyeFrameShape || 'square');
         setEyeBallShape(data.customization.eyeBallShape || 'square');
+        setOuterBorderShape(data.customization.outerBorderShape || 'none');
       }
     } catch (error) {
       console.error('Error loading QR code:', error);
@@ -233,12 +236,13 @@ export function QRDetailPage() {
 
       // Apply shapes if needed
       let finalImageUrl = qrImageUrl;
-      if (bodyShape !== 'square' || eyeFrameShape !== 'square' || eyeBallShape !== 'square') {
+      if (bodyShape !== 'square' || eyeFrameShape !== 'square' || eyeBallShape !== 'square' || outerBorderShape !== 'none') {
         try {
           const shapedBlob = await applyQRShapes(qrImageUrl, {
             bodyShape,
             eyeFrameShape,
             eyeBallShape,
+            outerBorderShape,
             foregroundColor,
             backgroundColor
           });
@@ -273,7 +277,8 @@ export function QRDetailPage() {
         logoUrl,
         bodyShape,
         eyeFrameShape,
-        eyeBallShape
+        eyeBallShape,
+        outerBorderShape
       };
 
       const { error } = await supabase
@@ -550,7 +555,7 @@ export function QRDetailPage() {
 
         <div className="grid md:grid-cols-2 gap-6">
           {/* QR Code Preview */}
-          <div className="bg-slate-900/80 border border-white/10 backdrop-blur-md rounded-2xl p-6 shadow-2xl">
+          <div className="bg-slate-900/80 border border-white/10 backdrop-blur-md rounded-2xl p-4 sm:p-6 shadow-2xl overflow-hidden">
             <h2 className="text-xl font-semibold text-white mb-4">QR Code Preview</h2>
             
             {hasActiveSubscription ? (
@@ -566,19 +571,19 @@ export function QRDetailPage() {
                           <img
                             src={shapedQRPreviewUrl}
                             alt={qrCode.name}
-                            className="w-64 h-64 object-contain"
+                            className="w-48 h-48 sm:w-64 sm:h-64 object-contain max-w-full"
                           />
                         ) : customQRPreviewUrl ? (
                           <img
                             src={customQRPreviewUrl}
                             alt={qrCode.name}
-                            className="w-64 h-64 object-contain"
+                            className="w-48 h-48 sm:w-64 sm:h-64 object-contain max-w-full"
                           />
                         ) : (
                           <img
                             src={qrCode.qr_image_url}
                             alt={qrCode.name}
-                            className="w-64 h-64 object-contain"
+                            className="w-48 h-48 sm:w-64 sm:h-64 object-contain max-w-full"
                           />
                         )}
                         {showLogo && logoUrl && (
@@ -588,8 +593,8 @@ export function QRDetailPage() {
                         )}
                       </>
                     ) : (
-                      <div className="w-64 h-64 bg-slate-800 rounded-lg flex items-center justify-center">
-                        <p className="text-white/40">No preview available</p>
+                      <div className="w-48 h-48 sm:w-64 sm:h-64 bg-slate-800 rounded-lg flex items-center justify-center">
+                        <p className="text-white/40 text-sm">No preview available</p>
                       </div>
                     )}
                   </div>
@@ -664,7 +669,7 @@ export function QRDetailPage() {
           </div>
 
           {/* Customization Options */}
-          <div className="bg-slate-900/80 border border-white/10 backdrop-blur-md rounded-2xl p-6 shadow-2xl">
+          <div className="bg-slate-900/80 border border-white/10 backdrop-blur-md rounded-2xl p-4 sm:p-6 shadow-2xl overflow-hidden">
             <h2 className="text-xl font-semibold text-white mb-4">Customization</h2>
 
             {/* Color Customization - Requires Subscription */}
@@ -685,40 +690,40 @@ export function QRDetailPage() {
               <div className="space-y-3">
                 <div>
                   <label className="block text-sm text-white/70 mb-1">Foreground Color</label>
-                  <div className="flex items-center space-x-2">
+                  <div className="flex items-center space-x-2 min-w-0">
                     <input
                       type="color"
                       value={foregroundColor}
                       onChange={(e) => setForegroundColor(e.target.value)}
                       disabled={!hasActiveSubscription}
-                      className={`w-16 h-10 rounded border border-white/10 cursor-pointer ${!hasActiveSubscription ? 'opacity-50 cursor-not-allowed' : ''}`}
+                      className={`w-12 h-10 sm:w-16 sm:h-10 rounded border border-white/10 cursor-pointer flex-shrink-0 ${!hasActiveSubscription ? 'opacity-50 cursor-not-allowed' : ''}`}
                     />
                     <input
                       type="text"
                       value={foregroundColor}
                       onChange={(e) => setForegroundColor(e.target.value)}
                       disabled={!hasActiveSubscription}
-                      className={`flex-1 px-3 py-2 bg-slate-900/60 border border-white/10 rounded-lg text-white ${!hasActiveSubscription ? 'opacity-50 cursor-not-allowed' : ''}`}
+                      className={`flex-1 min-w-0 px-2 sm:px-3 py-2 bg-slate-900/60 border border-white/10 rounded-lg text-white text-sm ${!hasActiveSubscription ? 'opacity-50 cursor-not-allowed' : ''}`}
                     />
                   </div>
                 </div>
                 
                 <div>
                   <label className="block text-sm text-white/70 mb-1">Background Color</label>
-                  <div className="flex items-center space-x-2">
+                  <div className="flex items-center space-x-2 min-w-0">
                     <input
                       type="color"
                       value={backgroundColor}
                       onChange={(e) => setBackgroundColor(e.target.value)}
                       disabled={!hasActiveSubscription}
-                      className={`w-16 h-10 rounded border border-white/10 cursor-pointer ${!hasActiveSubscription ? 'opacity-50 cursor-not-allowed' : ''}`}
+                      className={`w-12 h-10 sm:w-16 sm:h-10 rounded border border-white/10 cursor-pointer flex-shrink-0 ${!hasActiveSubscription ? 'opacity-50 cursor-not-allowed' : ''}`}
                     />
                     <input
                       type="text"
                       value={backgroundColor}
                       onChange={(e) => setBackgroundColor(e.target.value)}
                       disabled={!hasActiveSubscription}
-                      className={`flex-1 px-3 py-2 bg-slate-900/60 border border-white/10 rounded-lg text-white ${!hasActiveSubscription ? 'opacity-50 cursor-not-allowed' : ''}`}
+                      className={`flex-1 min-w-0 px-2 sm:px-3 py-2 bg-slate-900/60 border border-white/10 rounded-lg text-white text-sm ${!hasActiveSubscription ? 'opacity-50 cursor-not-allowed' : ''}`}
                     />
                   </div>
                 </div>
@@ -740,47 +745,147 @@ export function QRDetailPage() {
                 )}
               </div>
               
-              <div className="space-y-3">
-                <div>
-                  <label className="block text-sm text-white/70 mb-1">Body Shape</label>
-                  <select
-                    value={bodyShape}
-                    onChange={(e) => setBodyShape(e.target.value as BodyShape)}
-                    disabled={!hasActiveSubscription}
-                    className={`w-full px-3 py-2 bg-slate-900/60 border border-white/10 rounded-lg text-white ${!hasActiveSubscription ? 'opacity-50 cursor-not-allowed' : ''}`}
-                  >
-                    <option value="square">Square</option>
-                    <option value="rounded">Rounded</option>
-                    <option value="dots">Dots</option>
-                  </select>
+              {hasActiveSubscription && qrCode ? (() => {
+                // Shape preview component with QR code preview
+                const ShapePreview = ({ shape, label, type }: { shape: string; label: string; type: 'body' | 'eye' | 'eye-ball' | 'border' }) => {
+                  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+                  const [loading, setLoading] = useState(false);
+                  
+                  const isSelected = 
+                    (type === 'body' && bodyShape === shape) ||
+                    (type === 'eye' && eyeFrameShape === shape) ||
+                    (type === 'eye-ball' && eyeBallShape === shape) ||
+                    (type === 'border' && outerBorderShape === shape);
+                  
+                  const handleClick = () => {
+                    if (!hasActiveSubscription) return;
+                    if (type === 'body') setBodyShape(shape as BodyShape);
+                    else if (type === 'eye') setEyeFrameShape(shape as EyeShape);
+                    else if (type === 'eye-ball') setEyeBallShape(shape as EyeShape);
+                    else if (type === 'border') setOuterBorderShape(shape as OuterBorderShape);
+                  };
+
+                  // Generate preview for this specific shape
+                  useEffect(() => {
+                    if (hasActiveSubscription && qrCode && customQRPreviewUrl) {
+                      setLoading(true);
+                      
+                      const shapeOptions = {
+                        bodyShape: type === 'body' ? (shape as BodyShape) : bodyShape,
+                        eyeFrameShape: type === 'eye' ? (shape as EyeShape) : eyeFrameShape,
+                        eyeBallShape: type === 'eye-ball' ? (shape as EyeShape) : eyeBallShape,
+                        outerBorderShape: type === 'border' ? (shape as OuterBorderShape) : outerBorderShape,
+                        foregroundColor,
+                        backgroundColor
+                      };
+
+                      const timeoutId = setTimeout(() => {
+                        applyQRShapes(customQRPreviewUrl, shapeOptions).then(blob => {
+                          if (previewUrl) {
+                            URL.revokeObjectURL(previewUrl);
+                          }
+                          const url = URL.createObjectURL(blob);
+                          setPreviewUrl(url);
+                          setLoading(false);
+                        }).catch(error => {
+                          console.error('Error generating shape preview:', error);
+                          if (previewUrl) {
+                            URL.revokeObjectURL(previewUrl);
+                          }
+                          setPreviewUrl(null);
+                          setLoading(false);
+                        });
+                      }, 100);
+
+                      return () => {
+                        clearTimeout(timeoutId);
+                        if (previewUrl) {
+                          URL.revokeObjectURL(previewUrl);
+                        }
+                      };
+                    }
+
+                    return () => {
+                      if (previewUrl) {
+                        URL.revokeObjectURL(previewUrl);
+                      }
+                    };
+                  }, [customQRPreviewUrl, foregroundColor, backgroundColor, bodyShape, eyeFrameShape, eyeBallShape, outerBorderShape, shape, type]);
+
+                  return (
+                    <button
+                      onClick={handleClick}
+                      disabled={!hasActiveSubscription}
+                      className={`p-2 sm:p-3 rounded-lg border-2 transition min-w-0 w-full ${
+                        isSelected
+                          ? 'border-cyan-400 bg-cyan-400/20'
+                          : 'border-white/10 hover:border-white/30 bg-slate-900/60'
+                      } ${!hasActiveSubscription ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    >
+                      <div className="w-16 h-16 sm:w-20 sm:h-20 mx-auto mb-2 flex items-center justify-center bg-white rounded p-1 sm:p-2">
+                        {loading ? (
+                          <div className="w-full h-full flex items-center justify-center">
+                            <div className="animate-spin rounded-full h-6 w-6 sm:h-8 sm:w-8 border-2 border-cyan-400 border-t-transparent"></div>
+                          </div>
+                        ) : previewUrl ? (
+                          <img src={previewUrl} alt={label} className="w-full h-full object-contain" />
+                        ) : (
+                          <div className="w-full h-full bg-gray-200 rounded"></div>
+                        )}
+                      </div>
+                      <span className={`text-xs font-medium truncate block ${isSelected ? 'text-cyan-400' : 'text-white/70'}`}>
+                        {label}
+                      </span>
+                    </button>
+                  );
+                };
+
+                return (
+                  <div className="space-y-3">
+                    <div>
+                      <label className="block text-sm text-white/70 mb-1">Body Shape</label>
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 overflow-x-hidden">
+                        <ShapePreview shape="square" label="Square" type="body" />
+                        <ShapePreview shape="rounded" label="Rounded" type="body" />
+                        <ShapePreview shape="circle" label="Circle" type="body" />
+                        <ShapePreview shape="dots" label="Dots" type="body" />
+                      </div>
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm text-white/70 mb-1">Eye Frame Shape</label>
+                      <div className="grid grid-cols-3 gap-2 overflow-x-hidden">
+                        <ShapePreview shape="square" label="Square" type="eye" />
+                        <ShapePreview shape="rounded" label="Rounded" type="eye" />
+                        <ShapePreview shape="circle" label="Circle" type="eye" />
+                      </div>
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm text-white/70 mb-1">Eye Ball Shape</label>
+                      <div className="grid grid-cols-3 gap-2 overflow-x-hidden">
+                        <ShapePreview shape="square" label="Square" type="eye-ball" />
+                        <ShapePreview shape="rounded" label="Rounded" type="eye-ball" />
+                        <ShapePreview shape="circle" label="Circle" type="eye-ball" />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm text-white/70 mb-1">Outer Border</label>
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 overflow-x-hidden">
+                        <ShapePreview shape="none" label="None" type="border" />
+                        <ShapePreview shape="square" label="Square" type="border" />
+                        <ShapePreview shape="rounded" label="Rounded" type="border" />
+                        <ShapePreview shape="circle" label="Circle" type="border" />
+                      </div>
+                    </div>
+                  </div>
+                );
+              })() : (
+                <div className="space-y-3">
+                  <p className="text-sm text-white/50">Subscribe to unlock shape customization</p>
                 </div>
-                
-                <div>
-                  <label className="block text-sm text-white/70 mb-1">Eye Frame Shape</label>
-                  <select
-                    value={eyeFrameShape}
-                    onChange={(e) => setEyeFrameShape(e.target.value as EyeShape)}
-                    disabled={!hasActiveSubscription}
-                    className={`w-full px-3 py-2 bg-slate-900/60 border border-white/10 rounded-lg text-white ${!hasActiveSubscription ? 'opacity-50 cursor-not-allowed' : ''}`}
-                  >
-                    <option value="square">Square</option>
-                    <option value="rounded">Rounded</option>
-                  </select>
-                </div>
-                
-                <div>
-                  <label className="block text-sm text-white/70 mb-1">Eye Ball Shape</label>
-                  <select
-                    value={eyeBallShape}
-                    onChange={(e) => setEyeBallShape(e.target.value as EyeShape)}
-                    disabled={!hasActiveSubscription}
-                    className={`w-full px-3 py-2 bg-slate-900/60 border border-white/10 rounded-lg text-white ${!hasActiveSubscription ? 'opacity-50 cursor-not-allowed' : ''}`}
-                  >
-                    <option value="square">Square</option>
-                    <option value="rounded">Rounded</option>
-                  </select>
-                </div>
-              </div>
+              )}
             </div>
 
             {/* Logo Removal - Requires Subscription */}
